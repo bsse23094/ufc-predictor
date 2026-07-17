@@ -1,149 +1,81 @@
 # UFC Predictor
 
-UFC Predictor is a planned, production-quality sports analytics platform for generating reproducible pre-fight UFC predictions. It is designed to estimate:
+UFC Predictor is a planned, production-quality sports analytics platform for reproducible pre-fight UFC estimates. It is an analytics product, not a betting product: it will not make wagering recommendations, claim certainty, or conceal missing data behind confident-looking outputs.
 
-- fight winner probabilities;
-- KO/TKO, submission, and decision paths to victory;
-- expected finishing round and fight duration;
-- confidence, data sufficiency, and uncertainty;
-- comparable historical matchups and bounded counterfactual scenarios.
+## Current status
 
-The project is currently in the architecture and planning phase. It intentionally contains no production ingestion, model, API, or web implementation yet.
+The repository is implementing the accepted architecture in strict milestone order. Milestone 1's direct Python, web, Compose, migration, health, and API-image checks pass; the canonical local `just` entrypoint still requires its documented prerequisite. Milestone 2 has source-neutral governance plus one narrowly audited local-file adapter for Kaggle's Ultimate UFC Dataset: it reads only a user-downloaded CSV, preserves immutable raw evidence, and publishes a restricted source-shaped Parquet projection. It does not scrape UFCStats, download from Kaggle, construct features, or train models. **Milestone 2 is not accepted or complete** while its locked Parquet dependency and full verification remain blocked. See [the current progress audit](docs/CURRENT_PROGRESS.md) for verified evidence and blockers.
 
-## Why this project exists
+There is still no source data in this workspace, approved canonical dataset, trained model, catalog API, prediction endpoint, or production frontend experience. The local adapter requires a manually acquired `data/incoming/ultimate-ufc-dataset/ufc-master.csv`; its acquisition and provenance policy are documented in [the data-source audit](docs/architecture/DATA_SOURCE_AUDIT.md).
 
-Fight prediction is easy to make look impressive and hard to make trustworthy. This project prioritizes temporal correctness, traceability, calibration, and honest uncertainty over headline accuracy. Every published prediction is intended to be reproducible from immutable source inputs, a defined information cutoff, a feature snapshot, and a versioned model bundle.
+That boundary is intentional. Source access, licensing, timestamp semantics, and retention must be audited before any source can enter the system. See [the data-source audit](docs/architecture/DATA_SOURCE_AUDIT.md).
 
-The platform is an analytics product, not a betting product. It will not make wagering recommendations, claim certainty, or conceal missing data behind confident-looking outputs.
+## Architecture principles
 
-## Core principles
+- Immutable raw inputs with checksums and retrieval metadata
+- Auditable fighter identity resolution—never name-only automatic merging
+- Strict point-in-time features and hard leakage checks
+- Outcome-independent fighter orientation with dual inference
+- Separate pure and market-informed prediction modes
+- Chronological splitting, isolated calibration, and versioned artifacts
+- Clear uncertainty, data-quality, freshness, and responsible-use communication
 
-- **Leakage resistance:** Features use only information available before both the prediction cutoff and target fight.
-- **Immutable provenance:** Raw source bytes are preserved unchanged with checksums and ingestion metadata.
-- **Fighter identity safety:** Canonical fighter IDs, aliases, reviewable collision handling, and no name-only merges.
-- **Orientation symmetry:** Predictions cannot learn a winner column or red/blue ordering bias; training and inference evaluate both orientations.
-- **Probability quality:** Calibration, Brier score, log loss, uncertainty, coverage, and subgroup behavior matter alongside accuracy.
-- **Versioned outputs:** Dataset, feature, model, calibration, and prediction versions are returned together.
-- **Explicit degradation:** Missing market data, unsupported cohorts, out-of-distribution matchups, and incomplete sources remain visible.
-- **Responsible presentation:** Counterfactual inputs are clearly synthetic; explanations are non-causal; probabilities are uncertain estimates.
+The full implementation contract is in [docs/architecture](docs/architecture), especially [the Terra handoff](docs/architecture/TERRA_HANDOFF.md), [system overview](docs/architecture/SYSTEM_OVERVIEW.md), and [implementation roadmap](docs/architecture/IMPLEMENTATION_ROADMAP.md).
 
-## Planned system
+## Quick start: foundation
 
-~~~text
-External sources
-      |
-      v
-Immutable raw objects and ingestion manifests
-      |
-      v
-Canonical identities, events, fights, observations, and quality checks
-      |
-      v
-Point-in-time feature snapshots in Parquet and PostgreSQL
-      |
-      +--------------------------+
-      |                          |
-      v                          v
-Model training/evaluation    Approved online snapshots
-      |                          |
-      v                          v
-MLflow/object artifacts --> FastAPI prediction runtime --> Next.js application
-                                  |
-                                  v
-                         Background workers for simulation,
-                         explanations, ingestion, and backfills
-~~~
+Prerequisites: Docker Desktop, Node.js 22–24 with Corepack, PowerShell, and [`just`](https://github.com/casey/just) (for example, `winget install Casey.Just`). The bootstrap script installs the pinned `uv` tool and provisions Python 3.12.
 
-The intended stack is Python 3.12, Polars, Pandas, DuckDB, Parquet, PostgreSQL, scikit-learn, CatBoost, XGBoost, Optuna, MLflow, SHAP, FastAPI, Redis, Celery, Next.js, TypeScript, React, TanStack Query, Docker, and GitHub Actions.
+```powershell
+./scripts/bootstrap.ps1
+just infra-up
+just migrate
+just dev-api
+```
 
-## Model design
+In a second terminal:
 
-The architecture separates the following concerns:
+```powershell
+just dev-web
+```
 
-| Model | Purpose |
-|---|---|
-| Model A | Pure statistical winner probability, with no market fields |
-| Model B | Market-informed winner probability using timestamp-valid odds only |
-| Model C | Six fighter-specific joint method paths: each fighter by KO/TKO, submission, or decision |
-| Model D | Finishing-round and duration distributions using a discrete survival/hazard approach |
-| Model E | Conditional decision and judging disagreement analysis, initially shadow-only until data support is proven |
-| Model F | Confidence and uncertainty composition: calibration, OOD risk, missingness, debut/data sufficiency, and model disagreement |
+The API foundation is available at `http://127.0.0.1:8000/health`. `/readiness` accurately reports that database checks and model serving belong to later milestones. The web page is only a keyboard-accessible foundation shell.
 
-Model A and Model B remain distinct products. The system will never label a pure-model fallback as market-informed.
+Run the implemented quality suite with:
 
-## Architecture documentation
+```powershell
+just test
+```
 
-The full implementation contract is in [docs/architecture](docs/architecture).
+If Docker Desktop is unavailable, the container-health integration test is skipped locally. CI runs it with `RUN_CONTAINER_TESTS=1`.
 
-Recommended starting points:
+## Repository layout
 
-- [System overview](docs/architecture/SYSTEM_OVERVIEW.md)
-- [Requirements](docs/architecture/REQUIREMENTS.md)
-- [Data architecture](docs/architecture/DATA_ARCHITECTURE.md)
-- [Feature engineering specification](docs/architecture/FEATURE_ENGINEERING_SPEC.md)
-- [ML system design](docs/architecture/ML_SYSTEM_DESIGN.md)
-- [API specification](docs/architecture/API_SPECIFICATION.md)
-- [Database schema](docs/architecture/DATABASE_SCHEMA.md)
-- [Implementation roadmap](docs/architecture/IMPLEMENTATION_ROADMAP.md)
-- [Architecture decisions](docs/architecture/ADR_INDEX.md)
-- [Terra implementation handoff](docs/architecture/TERRA_HANDOFF.md)
+```text
+apps/api              FastAPI modular-monolith foundation
+apps/web              Next.js accessible application foundation
+services/ml           Data/ML package and guarded CLI
+packages/shared-types OpenAPI snapshot and generated contract target
+packages/ui           Generic visual tokens and future accessible primitives
+data                  Ignored raw, quarantine, interim, and processed data zones
+models                Ignored model-artifact cache zone
+infrastructure        Local/deployment/observability configuration target
+scripts               Safe bootstrap, checks, and generation commands
+tests                 Architecture, API, ML, and integration checks
+docs/architecture     Accepted implementation contract
+```
 
-## Delivery roadmap
+## Documentation
 
-Implementation proceeds through gated milestones:
-
-1. Repository foundation
-2. Raw-data ingestion and source audit
-3. Identity resolution and canonical data
-4. Temporal feature engineering
-5. Baseline modeling
-6. Calibration and full evaluation
-7. Database and FastAPI foundation
-8. Prediction service
-9. Frontend foundation
-10. Core prediction experience
-11. Simulation and similarity
-12. Explainability
-13. Testing and hardening
-14. Deployment and observability
-
-Each phase has acceptance criteria, required tests, risks, and an explicit stop/go condition in the [implementation roadmap](docs/architecture/IMPLEMENTATION_ROADMAP.md).
-
-## Data policy
-
-The platform is designed around data-source uncertainty:
-
-- Source schemas and identifiers are not assumed stable.
-- Raw datasets and trained model binaries must not be committed.
-- A source may not enter published datasets until access, retention, schema, timestamp semantics, and quality are audited.
-- Historical rankings and market features require dated, timestamped provenance.
-- Source corrections append new observations; they do not rewrite historical knowledge.
-
-See the [data source audit](docs/architecture/DATA_SOURCE_AUDIT.md) for the source-by-source validation plan.
-
-## Repository status
-
-This repository currently contains architecture documentation only. The intended future structure includes:
-
-~~~text
-apps/api              FastAPI modular monolith
-apps/web              Next.js frontend
-services/ml           Ingestion, feature, training, evaluation, inference package
-packages/shared-types OpenAPI-generated TypeScript contracts
-packages/ui           Shared accessible UI components
-data                  Ignored raw/interim/processed data zones
-models                Ignored model artifact zone
-infrastructure        Local, staging, production, and monitoring configuration
-tests                 Data, ML, API, web, contract, E2E, load, and security tests
-~~~
+- [Development guide](DEVELOPMENT.md)
+- [Contribution policy](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Dataset policy](DATASETS.md)
+- [Data-dictionary status](DATA_DICTIONARY.md)
+- [Model-card status](MODEL_CARD.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Deployment status](docs/DEPLOYMENT.md)
 
 ## Responsible use
 
-Predictions are analytical estimates conditioned on available historical information. They are not facts, guarantees, medical advice, financial advice, or betting recommendations. The product must communicate uncertainty, data limitations, model version, prediction cutoff, and source freshness alongside every result.
-
-## Contributing
-
-Before implementation begins, changes to the accepted architecture must be recorded through a new or superseding Architecture Decision Record. Do not bypass temporal, identity, split, orientation, provenance, or model-version invariants for convenience.
-
-See [TERRA_HANDOFF.md](docs/architecture/TERRA_HANDOFF.md) for the implementation order, repository contract, migrations, endpoints, test gates, and unresolved decisions.
-
+When implemented, predictions will be uncertain analytical estimates conditioned on retained historical information. They will display the model, dataset, feature, cutoff, and source-freshness versions that produced them. They are not facts, guarantees, financial advice, or betting advice.

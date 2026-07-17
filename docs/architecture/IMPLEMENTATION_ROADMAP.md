@@ -32,6 +32,8 @@ Estimates intentionally avoid calendar promises until team size, source access, 
 
 ## Milestone 2: raw-data ingestion
 
+**Status:** Complete for the approved, local-file-only Kaggle Ultimate UFC Dataset scope. UFCStats remains a red/no-go audit decision with no adapter or scraper. See `docs/CURRENT_PROGRESS.md` for the locked dependency and acceptance evidence.
+
 **Goal:** Acquire permitted source inputs reproducibly while preserving bytes and provenance.
 
 **Deliverables**
@@ -50,6 +52,8 @@ Estimates intentionally avoid calendar promises until team size, source access, 
 **Files/modules:** services/ml/src/ufc_predictor/ingestion/{base,registry,raw_store,runner,validation}.py, adapters/ufcstats, apps/api modules/data models, Alembic 0001-0002, tests/data/ingestion, scripts/ingest.
 
 ## Milestone 3: identity resolution and canonical data
+
+**Status:** In progress. Candidate-only alias normalization, candidate/review contracts, canonical fighter/alias schema, append-only durable review evidence, reviewed-link application, bitemporal alias correction, guarded canonical merge/split transitions, a source-shaped canonical Parquet mapping boundary, transactional relational loading, and durable conflict/quarantine reports are implemented. A durable review must exactly match retained source/raw evidence before it can create aliases or transition canonical identities; every application is append-only and terminal (`applied` or `quarantined`). The mapper requires exact reviewed aliases and explicit reviewer-attributed outcome/method/division mappings, preserving raw labels and quarantining any gap. A quarantine requires an audit issue; mapper quarantines plus relational or replay conflicts persist idempotent blocking reports keyed by source record and raw checksum. The loader atomically publishes source references, fights, outcome-independent participants, identity evidence, and results only from a zero-quarantine mapping result. The approved source has no event identifier, so it records event context as `not_observed` rather than inventing events. No real-source taxonomy map is supplied by default. Fixture acceptance is verified; real-source acceptance awaits the manually acquired approved file and its reviewed aliases/labels.
 
 **Goal:** Build canonical fighters/events/fights and prevent identity collisions or silent joins.
 
@@ -286,4 +290,3 @@ Estimates intentionally avoid calendar promises until team size, source access, 
 ## Definition of done
 
 Done means code, migrations, versioned contract, tests, operational telemetry, documentation, security review, and rollback/maintenance path exist. A notebook result, locally loaded model, or attractive page alone is not a deliverable.
-

@@ -29,6 +29,12 @@ Use CHECK constraints for probability/range/state invariants, PostgreSQL enums o
 Indexes: lower(display_name) search/trigram; identity_status.  
 Constraints: merge target differs from self. Names are not unique.
 
+Reviewed merge/split state is not inferred from display names. `merged_into_fighter_id`
+is a current-state projection guarded by database triggers; every transition must
+have an applied, append-only identity-resolution application and merge/split
+ledger record. A split restores only that identity edge and never silently moves
+source aliases.
+
 ### fighter_aliases
 
 - fighter_alias_id UUID PK
@@ -43,6 +49,21 @@ Constraints: merge target differs from self. Names are not unique.
 
 Unique: (source_id, alias_type, provider_external_id) where external ID is not null. Name strings are deliberately not unique.  
 Indexes: fighter_id; (source_id, normalized_value); unresolved status.
+
+Alias identity/provenance fields are immutable. A current alias may only be
+closed by setting `system_to`; reviewed corrections create a replacement alias
+and an append-only supersession link rather than reassigning or overwriting the
+source alias.
+
+### fighter_identity_merges and fighter_identity_splits
+
+Both ledgers are append-only and reference the terminal identity-resolution
+application that authorized the action. A merge records the active canonical
+fighter, merged fighter, actor, and timestamp. A split references exactly one
+prior merge, its superseding review, the restored fighter, actor, and timestamp.
+The database permits neither a merge retarget nor a restoration without these
+records. Historical aliases remain attached to their original fighter records;
+alias correction is a separate bitemporal operation.
 
 ### fighter_attribute_observations
 
@@ -67,7 +88,7 @@ Unique: normalized canonical name only after reviewed resolution.
 ### events
 
 - event_id UUID PK
-- promotion_id UUID NOT NULL FK promotions
+- promotion_id UUID NULL FK promotions when the source has not supplied a reviewed promotion fact
 - canonical_name TEXT NOT NULL
 - status TEXT NOT NULL
 - scheduled_start_at, actual_start_at TIMESTAMPTZ NULL
@@ -81,18 +102,27 @@ Provider identifiers belong in event_source_refs with unique source/external key
 ### fights
 
 - fight_id UUID PK
-- event_id UUID NOT NULL FK events
+- event_id UUID NULL FK events only when `event_context_status = not_observed`; a missing event identifier is never inferred from date/location
 - status TEXT NOT NULL
 - division_id UUID NULL FK divisions
 - scheduled_order INTEGER NULL
 - scheduled_rounds, round_length_seconds INTEGER NULL
 - scheduled_start_at TIMESTAMPTZ NULL
 - ruleset_version TEXT NULL
-- created_at, updated_at
+- fight_date DATE NULL retains a source-supplied calendar date without fabricating a start timestamp
+- publication_state (`staged`/`published`), created_at, updated_at
 
 Unique: (event_id, scheduled_order) only when stable/non-null is not relied on for identity; provider refs have actual unique source keys.  
 Indexes: event_id; scheduled_start_at; status/division.  
-Checks: positive rounds/round length.
+Checks: positive rounds/round length. A deferred constraint trigger requires exactly two participants and one current result before a canonical fight can become `published`.
+
+### event_source_references and fight_source_references
+
+Immutable source/raw links retain source ID, raw object, schema version, source
+record/external key, ingestion time, and canonical fight key. Replaying the same
+source fact returns the existing fight; a conflicting replay is rejected rather
+than silently updating a canonical fact and is recorded as a blocking canonical
+quality issue with source-record/checksum evidence.
 
 ### fight_participants
 
@@ -105,7 +135,7 @@ Checks: positive rounds/round length.
 - created_at
 
 Unique: (fight_id, fighter_id), (fight_id, canonical_slot).  
-Checks: canonical_slot in (0,1). A deferred constraint trigger validates exactly two participants when a fight becomes model-eligible. canonical_slot is outcome-independent.
+Checks: canonical_slot in (0,1). A deferred constraint trigger validates exactly two participants when a fight becomes published. canonical_slot is outcome-independent. `fight_participant_identity_evidence` links each source participant to the applied identity-resolution decision that resolved that fighter.
 
 ### fight_results
 
@@ -221,13 +251,13 @@ Indexes: fighter/system/as_of descending; source fight. Ratings are pre/post upd
 
 ### data_sources
 
-source_id UUID PK; stable key/name; source type; policy/terms version; enabled state; rate policy; owner; timestamps. Secrets are references, never stored here.
+source_id UUID PK; stable key/name; source type; declared dataset licence; policy/terms version; attribution text; enabled state; rate policy; owner; timestamps. Secrets are references, never stored here.
 
 ### raw_objects
 
-raw_object_id UUID PK; source_id FK; object_uri; sha256; bytes/content type; source locator (redacted as needed); requested/retrieved/source-modified times; HTTP metadata safe JSON; ingestion_run_id FK; retention class.
+raw_object_id UUID PK; source_id FK; object_uri; sha256; bytes/content type; source locator (redacted as needed); original filename; source-schema version; requested/retrieved/source-modified times; HTTP metadata safe JSON; ingestion_run_id FK; retention class.
 
-Unique: sha256 plus storage namespace; every retrieval relationship remains in raw_retrievals if bytes deduplicate. Index source/retrieved.
+Unique: source_id plus storage namespace and sha256; every retrieval relationship remains in raw_retrievals. This keeps source provenance unambiguous when different sources retain identical bytes, while the object-store implementation may still deduplicate the underlying blob by checksum. Index source/retrieved.
 
 ### ingestion_runs
 
@@ -249,6 +279,7 @@ Unique: idempotency key/source. Index status/start and source/published.
 - entity_type/entity_id nullable
 - rule_id, severity, status, blocking
 - safe summary, evidence object URI/JSON, occurrence_count
+- canonical_issue_key nullable; unique per source when present for idempotent canonical quarantine/conflict replay aggregation
 - first/last_seen, assigned/resolved timestamps and actor
 - row_version
 
@@ -386,4 +417,3 @@ PostgreSQL indexes are confirmed with EXPLAIN on real query fixtures. Parquet pa
 ## Integrity limitations
 
 Some cross-table constraints, such as participant belonging to the same fight, round/time compatibility, probability JSON coherence, and immutability state transitions, require deferred triggers plus domain validation. Both are tested; relying only on application checks is insufficient, while encoding all evolving domain taxonomy in rigid database enums would make migrations fragile.
-
