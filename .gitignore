@@ -35,6 +35,8 @@ test-results/
 /data/incoming/*
 !/data/incoming/.gitkeep
 !/data/incoming/ultimate-ufc-dataset/.gitkeep
+/data/ufc-master.csv
+/data/upcoming.csv
 /data/raw/*
 !/data/raw/.gitkeep
 /data/quarantine/*
