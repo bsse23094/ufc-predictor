@@ -1,0 +1,57 @@
+[project]
+name = "ufc-predictor-workspace"
+version = "0.1.0"
+description = "UFC Predictor monorepo tooling workspace"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["apps/api", "services/ml"]
+
+[tool.uv.sources]
+ufc-predictor-ml = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "mypy==1.16.1",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "pytest-xdist==3.7.0",
+  "ruff==0.12.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+  "integration: checks requiring local service infrastructure",
+  "architecture: repository and architecture-contract checks",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["apps/api/src", "services/ml/src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ufc_api", "ufc_predictor"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+explicit_package_bases = true
+mypy_path = ["apps/api/src", "services/ml/src"]
+files = ["apps/api/src", "services/ml/src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*"]
+ignore_missing_imports = true

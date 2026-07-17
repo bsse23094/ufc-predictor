@@ -1,0 +1,12 @@
+{
+  "name": "@ufc-predictor/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "generate": "openapi-typescript openapi.json -o src/generated.ts",
+    "check-generated": "corepack pnpm generate && git diff --exit-code -- openapi.json src/generated.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.7.0"
+  }
+}

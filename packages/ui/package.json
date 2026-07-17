@@ -1,0 +1,12 @@
+{
+  "name": "@ufc-predictor/ui",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "peerDependencies": {
+    "react": "19.1.0"
+  }
+}

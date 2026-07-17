@@ -1,0 +1,7 @@
+# Architecture and governance changes require review by their respective owners.
+* @ufc-predictor-maintainers
+/docs/architecture/ @ufc-predictor-architecture
+/apps/api/ @ufc-predictor-backend
+/services/ml/ @ufc-predictor-data-ml
+/apps/web/ @ufc-predictor-frontend
+/infrastructure/ @ufc-predictor-platform

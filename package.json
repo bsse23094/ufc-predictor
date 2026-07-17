@@ -1,0 +1,24 @@
+{
+  "name": "ufc-predictor",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=22.0.0 <25.0.0",
+    "pnpm": "10.13.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.10"
+    }
+  },
+  "scripts": {
+    "build": "corepack pnpm --filter @ufc-predictor/web build",
+    "dev:web": "corepack pnpm --filter @ufc-predictor/web dev",
+    "lint": "corepack pnpm --filter @ufc-predictor/web lint",
+    "test": "corepack pnpm --filter @ufc-predictor/web test",
+    "typecheck": "corepack pnpm --filter @ufc-predictor/web typecheck",
+    "generate:types": "corepack pnpm --filter @ufc-predictor/shared-types generate",
+    "check:generated": "corepack pnpm --filter @ufc-predictor/shared-types check-generated"
+  }
+}

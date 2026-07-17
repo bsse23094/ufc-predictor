@@ -1,0 +1,17 @@
+name: Release gate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation-release-status:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Block production release before launch milestone
+        run: |
+          echo "Production release is unavailable until the M14 launch gate is passed."
+          exit 1

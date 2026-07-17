@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ufc-predictor-api"
+version = "0.1.0"
+description = "FastAPI modular monolith for UFC Predictor"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic==1.16.2",
+  "asyncpg==0.30.0",
+  "celery==5.5.3",
+  "fastapi==0.115.12",
+  "httpx==0.28.1",
+  "prometheus-client==0.22.1",
+  "pydantic-settings==2.9.1",
+  "psycopg[binary]==3.2.9",
+  "redis==6.2.0",
+  "sqlalchemy==2.0.41",
+  "ufc-predictor-ml",
+  "uvicorn[standard]==0.34.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ufc_api"]

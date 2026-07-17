@@ -1,0 +1,77 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python tooling and test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node and browser tooling
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+.turbo/
+*.tsbuildinfo
+
+# Local data planes: only their README and .gitkeep files are tracked.
+/data/incoming/*
+!/data/incoming/.gitkeep
+!/data/incoming/ultimate-ufc-dataset/.gitkeep
+/data/raw/*
+!/data/raw/.gitkeep
+/data/quarantine/*
+!/data/quarantine/.gitkeep
+/data/interim/*
+!/data/interim/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+
+# Rebuildable analytical and model artifacts
+/models/*
+!/models/.gitkeep
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+.mlruns/
+mlartifacts/
+minio-data/
+*.pkl
+*.pickle
+*.joblib
+*.onnx
+*.pt
+*.pth
+*.cbm
+
+# Local infrastructure state
+.docker/
+postgres-data/
+redis-data/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Non-committed pinned external-source cache. Raw approved copies are retained
+# only in data/incoming under their source-specific policy.
+.cache/

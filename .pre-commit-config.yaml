@@ -1,0 +1,18 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run ruff check apps/api/src services/ml/src tests scripts
+        language: system
+        pass_filenames: false
+      - id: ruff-format
+        name: Ruff format check
+        entry: uv run ruff format --check apps/api/src services/ml/src tests scripts
+        language: system
+        pass_filenames: false
+      - id: architecture-docs
+        name: Architecture and documentation links
+        entry: uv run python scripts/check_architecture.py
+        language: system
+        pass_filenames: false
