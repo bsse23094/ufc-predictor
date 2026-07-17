@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MAX_TRACKED_BYTES = 1_048_576
 FORBIDDEN_SUFFIXES = {".pkl", ".pickle", ".joblib", ".onnx", ".pt", ".pth", ".cbm", ".duckdb"}
 SECRET_MARKERS = (
-    b"-----BEGIN PRIVATE KEY-----",
-    b"AKIA",
+    b"-----BEGIN " + b"PRIVATE KEY-----",
+    b"A" + b"KIA",
     b"gh" + b"p_",
     b"github" + b"_pat_",
 )
