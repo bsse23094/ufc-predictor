@@ -1,0 +1,3 @@
+R_fighter,B_fighter,date,Winner,no_of_rounds,weight_class,title_bout,R_avg_SIG_STR_landed,B_current_win_streak,R_wins,finish,finish_round
+Alpha Fighter,Beta Fighter,2024-01-20,Red,3,Lightweight,False,4.2,3,12,KO/TKO,2
+Gamma Fighter,Delta Fighter,2024-02-10,Blue,5,Welterweight,True,3.1,1,9,U-DEC,5
