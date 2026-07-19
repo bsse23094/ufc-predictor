@@ -53,5 +53,5 @@ mypy_path = ["apps/api/src", "services/ml/src"]
 files = ["apps/api/src", "services/ml/src", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*"]
+module = ["celery.*", "joblib", "numpy", "pandas", "sklearn.*", "xgboost", "xgboost.*"]
 ignore_missing_imports = true

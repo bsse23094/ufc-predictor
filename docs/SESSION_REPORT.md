@@ -199,3 +199,182 @@ M3 is conditionally complete: source acquisition, local ingestion,
 reconciliation, review artifacts, and leakage-safe proposal generation are
 complete. Canonical/model publication remains gated on human review of aliases,
 taxonomy, and 4,664 source conflicts.
+
+## M3 reconciliation semantic-profile continuation (2026-07-18)
+
+The 4,664 figure above is now explicitly the original legacy conflict count,
+not the human-review queue. Deterministic reconciliation v4 compares parallel
+source observations without merging them. It preserves raw left/right values,
+normalized comparison evidence, rule IDs, and candidate evidence in three
+local artifacts at
+`data/quarantine/reconciliation/ultimate_ufc_datalab/m3-reconciliation-v5/`:
+the summary, non-review JSONL, and residual-material JSONL.
+
+The complete semantic profile covers all 6,843 candidate pairs. Field-level
+semantic disagreements are identity 0, corner orientation 0, outcome 14,
+event date 0, event name 6,843, weight class 326, scheduled rounds 44, finish
+method 4,691, finish round 408, finish time 408, and location 0. The summary
+contains all field combinations (the largest is event name + finish method at
+4,174). It separately preserves raw formatting variation counts so a
+case/Unicode/punctuation difference is not misreported as a semantic one.
+
+The classification result is 0 fully equivalent pairs, 2,028 soft metadata
+disagreements, 1,915 missing-value-only pairs (included in the soft count), 0
+strictly post-fight-only pairs, and 4,801 post-fight-detail disagreements that
+also carry the expected missing Ultimate event name. There are 334
+Ultimate-only and 1,894 UFC-DataLab-only `missing_on_one_source` candidates;
+0 material identity conflicts; 14 material outcome conflicts; and 0 ambiguous
+bout matches. The human-review queue is therefore 14 records.
+
+Focused tests pass for source-value immutability, deterministic artifact rerun,
+normalization that cannot change a winner or fighter identity, unresolved
+material outcome disagreement, and unresolved ambiguous matches. No identity
+or taxonomy review decision was applied, and candidate historical features are
+still not model-ready.
+
+## M3 final human-review preparation (2026-07-18)
+
+Generated the reviewer-only packet at `data/quarantine/reviews/m3/`:
+`m3_reviewer_packet.md`, `m3_identity_decisions.csv`,
+`m3_taxonomy_decisions.csv`, and `m3_outcome_conflict_decisions.csv`.
+Deduplication yields 51 identity decisions, 63 taxonomy decisions, and 14
+outcome decisions. Each record preserves source values/evidence and row/bout
+scope, offers a conservative proposed action and recommendation, and has
+blank reviewer-decision and notes fields. Bruno Silva is separately protected
+as distinct Flyweight and Middleweight identities; alias suggestions do not
+authorize fuzzy merges.
+
+The 14 outcome entries retain both records and classify 12 no-contest versus
+winner disagreements (with `Overturned` method evidence where applicable) and
+2 winner-versus-winner disagreements. There are no draw or source-parsing
+residuals. `build-m3-reviewer-packet` rebuilds the packet deterministically.
+`import-m3-reviewer-decisions` validates issued IDs and unchanged evidence,
+requires reviewer/timestamp/rationale, rejects missing/duplicate/stale/
+contradictory decisions, and appends idempotently to a review ledger. It does
+not change raw data or apply canonical identity, taxonomy, or outcome facts.
+
+Focused tests cover valid idempotent import and missing, unknown, duplicate,
+contradictory, and stale decisions. M3 remains conditionally complete until a
+reviewer imports decisions and all canonical/model-ready gates pass.
+
+## M3 corrected deferred-review packet (2026-07-18)
+
+Created `data/quarantine/reviews/m3-corrections-v4/` and retired 12 stale
+review IDs. The replacement identity is `M3-ID-524AA01602F1`: one Roldan
+Sangcha-an identity retaining both punctuation variants. Seven new taxonomy
+items provide the exact requested mappings and missing-stance-null policy.
+The old aggregate round/finish decisions became 48 per-bout reviews: 27
+explicit DataLab overtime formats and 21 Ultimate four-round records proposed
+for exclusion pending authoritative correction. No mapping or exclusion is yet
+applied; 56 correction decisions await review.
+
+The corrected outcome rows were preserved as supplied (12 `confirm_overturned`,
+2 `select_ufc_datalab`). The importer now recognizes explicit corrected-map,
+preserve-null, and record-exclusion actions, rejects retired IDs, and remains
+atomic and ledger-only. Focused correction tests cover replacement identity,
+retirement, per-bout split, and `preserve_null` import. M3 remains conditionally
+complete until the replacement packet is reviewed and imported.
+
+## M3 anomaly-packet audit (2026-07-18)
+
+Audited the asserted 4,827 UFC-DataLab overtime-format rows before any review
+decision import. The claim is not reproducible: the immutable 8,737-row
+semicolon CSV is an aggregate-bout table with 8,736 unordered date/fighter
+bout keys (one repeated key), not a round-stat or fighter-side table. The
+detector parses scheduled maximum rounds only from raw `time_format`, adds OT
+segments, leaves `No Time Limit` null, and flags only numeric
+`finish_round > parsed_scheduled_rounds`. It finds **0 rows / 0 bouts**.
+There are 152 valid explicit overtime-format rows / 151 unique bouts, all
+within schedule.
+
+The deterministic v6 reviewer-only packet is in
+`data/quarantine/reviews/m3-corrections-v6/`. Its detector audit records all
+field semantics, parser/null assumptions, top 20 raw combinations, dedupe
+results, and 30 representative normal, five-round, finish, and historical
+special-format cases. A companion audit lists all 21 Ultimate raw-four-round
+records by row, fighters, date, format evidence, and action: 19 are exact
+DataLab `3 Rnd + OT (5-5-5-5)` matches and legitimate; two remain unresolved
+cross-source identity/bout matches and are merely exclusion candidates.
+
+The superseded 56 decisions reconcile exactly to 1 replacement identity, 6
+exact taxonomy mappings, 1 missing-value policy, 27 individual DataLab format
+records, and 21 individual Ultimate rows. The new packet has **20**
+decisions: 1 identity, 6 exact taxonomy, 1 null policy, 9 grouped special
+formats, 1 grouped four-round confirmation, and 2 unresolved bout actions.
+Therefore 46 former bout-review records are deterministic detector false
+positives; zero records were excluded or modified. Regression tests pass for
+legal three-/five-round results, OT, duplicate rows, impossible rounds, and
+packet deduplication. M3 remains conditionally complete; no decision was
+imported and no canonical, feature, or model artifact was materialized.
+
+## M3 v6 imported-decision validation (2026-07-18)
+
+The v6 immutable ledger now validates successfully: 34 unique active records,
+zero blanks/deferred decisions, valid reviewer/timestamp/rationale fields,
+and recomputed v6 evidence hashes. Its SHA-256 is
+`e4092ca73c5d15dc8695db33c291f6a472b5fe0e36b0d705a19fc64fa37215bb`.
+The idempotent import replay returns 0 applied / 34 replayed. Decisions are 1
+identity correction, 6 exact taxonomy mappings, 1 null-stance policy, 9
+special-format groups, 1 four-round confirmation, 2 traceable exclusions,
+and 14 outcome resolutions (12 overturned, 2 UFC-DataLab selections).
+
+Post-review materialization was not attempted because the closed v6 ledger
+does not supply the source-wide exact aliases and observed-label taxonomy maps
+the canonical mapper requires for every retained source row. The older review
+queues have additional unledgered approvals, which cannot be silently promoted
+to v6 authority. This is a data-governance blocker, not an environment or
+code-quality failure. The locked workspace sync, static checks, focused M3
+tests, architecture check, policy check, and Compose configuration validation
+passed. The repository-wide pytest invocation emitted progress through 83 of
+90 collected tests but did not return a terminal summary in this execution
+runner; that environment-only verification limitation is separate from the
+materialization blocker. M3 remains conditionally complete.
+
+## M3 authority migration/materialization continuation (2026-07-18)
+
+Migrated the 49 approved legacy identity and 53 approved taxonomy decisions
+into a separate immutable v6 supplemental authority ledger; 12 deferred rows
+were retired/superseded and none rejected. Derived M3 v6 outputs now contain
+2,790 canonical fighters, 9,069 canonical bouts, two reviewed exclusions, and
+9,069-row historical/model-ready projections. M3 remains conditionally
+complete pending complete materialization-specific acceptance coverage.
+
+## M3 final acceptance (2026-07-18)
+
+Implemented `ufc_predictor.m3_materialization` and the `materialize-m3` CLI.
+It validates and immutably migrates 49 approved legacy identity decisions and
+53 taxonomy decisions (12 deferred/retired rows rejected), then combines them
+with the closed 34-record v6 ledger. Safe defaults cover only unchanged,
+unambiguous self identities and canonical taxonomy passthrough; reviewed
+Roldan aliases consolidate, and Bruno Silva remains division-scoped separate
+identities. The generated snapshot has 9,039 canonical bouts, 2,770 fighters,
+9,039 historical rows and 9,039 model-ready rows. Both reviewed exclusions
+are preserved in `reviewed_exclusions.parquet`; M3 unresolved count is zero.
+
+Focused M3 tests pass (17 passed), including migration/rejection, replay,
+exclusions, identity behavior, uniqueness, and feature leakage checks.
+
+## M3 final acceptance evidence (2026-07-19)
+
+This supersedes the prior 9,039/2,770 materialization summary. M3 now publishes
+immutable generation `m3-74eeb9b7f49b5adca45e461a` with a deterministic,
+generation-scoped `m3_final_acceptance_report.json`. The report is derived at
+materialization time from the manifests, artifacts, raw inputs, authority
+ledgers, and provenance; it has no timestamp, absolute path, UUID, or own
+checksum. It validates 2,790 fighters, 9,068 canonical historical/pairwise
+bouts, 8,912 model-ready rows (4,610 positive and 4,302 negative labels),
+65 draws, 91 no-contests, 130 model features, 150,162 uniquely covered output
+rows, and zero unresolved or model/provenance audit failures.
+
+`tests/data/test_m3_final_acceptance.py` asserts the published JSON exactly
+matches the generated artifacts, manifest schemas and hashes, raw/ledger
+checksums, authority-resolution coverage, model targets, and eligibility
+equation. The established Phase 2C test retains the three atomic failure
+injections and byte-identical replay check.
+
+The final M3 suite passed with **71 tests**. A separate two-pass materialize
+replay preserved generation `m3-74eeb9b7f49b5adca45e461a` and identical
+acceptance-report bytes (SHA-256
+`5844d6b59ea693c8620a3443d82f4d704254023eba32e8967d1d280c9cc02c5c`). Ruff,
+mypy, formatting, architecture/docs and repository-policy checks, `git diff
+--check`, and `docker compose config --quiet` also passed.

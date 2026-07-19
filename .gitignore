@@ -77,3 +77,6 @@ Thumbs.db
 # Non-committed pinned external-source cache. Raw approved copies are retained
 # only in data/incoming under their source-specific policy.
 .cache/
+
+# Local test snapshots, logs, and downloaded build inputs.
+.tmp/

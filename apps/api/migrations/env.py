@@ -7,7 +7,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-import ufc_api.data.models  # noqa: F401
+import ufc_api.data.models
 import ufc_api.fighters.models  # noqa: F401
 from ufc_api.db.base import Base
 

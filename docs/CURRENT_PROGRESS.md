@@ -16,8 +16,8 @@ No approved canonical data, feature snapshot, trained model, catalog API, predic
 | 1. Repository foundation | Partial | Python/Node workspaces, Compose, migrations, health shell, CI policy checks, web build, API-image build, and live PostgreSQL/Redis tests pass. The complete Compose app profile starts and serves API `/health` plus the web shell. The canonical `just` flow remains unverified because its documented executable is not installed locally. |
 | 2. Raw-data ingestion | Complete — approved local Kaggle scope | The locked Polars wheel is installed and checksum-verified. Dedicated fixtures, the whole Python suite with live Compose coverage, static checks, Alembic SQL validation, and a local CLI replay all pass. The local-only Kaggle adapter preserves source bytes/checksums/provenance, quarantines unsafe fields, and writes a restricted Parquet projection. UFCStats remains explicitly red and has no adapter or scraper. |
 | 3. Identity and canonical data | In progress | Candidate-only normalization, conservative equal-key candidate pairing, versioned scoring, review contracts, canonical fighter/alias schema, append-only durable review evidence, reviewed-link application, bitemporal alias correction, guarded canonical merge/split transitions, source-shaped canonical Parquet mapping, and transactional relational loading retain exact aliases and raw provenance. Canonical mapping accepts only exact reviewed aliases and reviewer-attributed source/schema outcome, method, and division mappings; it preserves raw labels, separates results from future feature inputs, quarantines every gap/conflict, and blocks partial publication. The loader publishes only a balanced mapping result with source references, fights, deterministic participant slots, applied identity evidence, and results. Mapping or relational/replay failures are now recorded as idempotent blocking `data_quality_issues`, keyed by source record and raw checksum, before catalog publication remains blocked. The source lacks a reviewed event identifier, so it explicitly stores `event_context_status = not_observed` instead of inventing events. No real-source taxonomy defaults are approved. Fixture acceptance is covered; real-source M3 acceptance remains blocked on a manually acquired file and reviewed labels/aliases. |
-| 4. Temporal features | Not started | No target grid, point-in-time joiner, feature registry, lineage validator, ratings, or split manifest. |
-| 5. Baseline modeling | Not started | No approved dataset, splits, baselines, training run, or artifact. |
+| 4. Temporal features | Partial | The accepted M3 generation includes deterministic pre-fight history, performance, and pairwise projections. A general feature registry, online/offline parity layer, ratings, and target-grid builder remain outstanding. |
+| 5. Baseline modeling | Partial | Deterministic chronological baseline, symmetry-aware, and rolling-temporal XGBoost workflows are implemented against the accepted M3 generation. They emit local versioned artifacts; calibration, promotion, registry, and serving remain outstanding. |
 | 6. Calibration and full evaluation | Not started | No candidate, calibration artifact, evaluation report, or registry. |
 | 7. Database and FastAPI foundation | Partial | Settings, error envelope, request IDs, session helper, governance models/repository, and migrations exist. The M3 relational catalog schema is present, but catalog/freshness endpoints, auth, cache, and truthful dependency readiness remain absent. |
 | 8. Prediction service | Not started | No feature snapshots, bundles, runtime, workers, or prediction endpoints. |
@@ -138,9 +138,9 @@ The rows above retain the pre-install audit trail. The following commands supers
 ## Data and ML integrity
 
 - The initial UFCStats scope is red, not approved: no automated source access, adapter, fixture, raw retention, or field may be enabled. R-001 and R-003 remain open critical risks until a licensed alternative is approved.
-- The strict feature invariant `latest_source_timestamp < target_fight_timestamp` is not implemented because Milestone 4 has not started. There is no canonical data, feature code, or training path, so no current-fight, future, post-fight, late-odds, winner-first, or test data can enter training features today.
+- The strict feature invariant `latest_source_timestamp < target_fight_timestamp` remains an M4 hard gate for the future general feature platform. The accepted M3 materialization and the current M4 training inputs are pre-fight projections with explicit target and provenance contracts; no current-fight, future, post-fight, late-odds, winner-first, or test data is admitted as a prediction feature.
 - M2 persistence does not authorize unbounded network access. UFCStats remains disabled and absent from the registry. The one enabled policy is a bounded local-file read backed by a licensed Kaggle audit; it contains no credentials and no download/scraping logic. Tests use only synthetic payloads.
-- The strict feature invariant `latest_source_timestamp < target_fight_timestamp` remains an M4 hard gate. The local adapter does not construct features or train models: it quarantines results/finishes, odds, R/B stats, records, ranks, streaks, differences, supplied aggregates, unreviewed fields, and unverified source orientation.
+- The local ingestion adapter still does not itself construct features or train models: it quarantines results/finishes, odds, R/B stats, records, ranks, streaks, differences, supplied aggregates, unreviewed fields, and unverified source orientation. Downstream M3/M4 stages consume only accepted, reviewer-governed materializations.
 - `0001_governance_raw.py` combines the handoff's planned governance and raw-quality scopes. It was not rewritten; provenance correction is a forward `0002` migration.
 
 ## Remaining blockers
@@ -202,3 +202,165 @@ When the manually acquired approved Kaggle file is available, ingest it through 
   **conditionally complete**: deterministic two-source work is complete, but
   reviewed identity/taxonomy and reconciliation-conflict decisions are needed
   before canonical/model use.
+
+## M3 reconciliation semantic-profile continuation (2026-07-18)
+
+- Replaced the coarse candidate `conflict` bucket with a deterministic,
+  evidence-preserving classifier. It retains both source rows, comparison
+  values, applied rule IDs, and candidate-match evidence; it does not create
+  aliases, apply taxonomy, select source precedence, or overwrite source data.
+- The immutable local reconciliation artifacts are
+  `data/quarantine/reconciliation/ultimate_ufc_datalab/m3-reconciliation-v5/`
+  (`reconciliation_summary.json`, `deterministic_or_soft_conflicts.jsonl`, and
+  `residual_material_conflicts.jsonl`). The summary includes counts by every
+  requested field and every observed field combination.
+- The previous 4,664 conflict count is retained as the legacy baseline. Of
+  6,843 candidate pairs, 2,028 are soft metadata, 1,915 are
+  missing-value-only (a soft subset), 0 are strictly post-fight-only, and
+  4,801 have post-fight detail differences alongside expected event-name
+  absence. Material identity conflicts and ambiguous matches are both 0;
+  material outcome conflicts are 14. The residual human-review queue is 14.
+  The 334 Ultimate-only and 1,894 UFC-DataLab-only records remain
+  `missing_on_one_source` rather than inferred matches.
+- Deterministic comparison-only rules cover Unicode/spacing/case/punctuation,
+  date/time/integer formats, exact outcome labels in their own corner context,
+  the `Bout` presentation suffix, and equivalent method/event/location
+  formatting. They cannot alter a source winner or fighter identity. Candidate
+  history remains review-only and is not promoted to model-ready status.
+
+## M3 final human-review preparation (2026-07-18)
+
+- Consolidated the four existing source review queues into the immutable local
+  reviewer packet at `data/quarantine/reviews/m3/`. It contains 51
+  deduplicated identity decisions, 63 deduplicated taxonomy decisions, and 14
+  compact material-outcome decisions, plus matching editable CSV templates.
+  A single review ID groups repeated raw values while retaining every source
+  value, source evidence, row/bout count, confidence, recommendation, and
+  blank reviewer decision/notes fields.
+- Bruno Silva is an explicit `identity.homonym_preservation` action requiring
+  separate Flyweight and Middleweight identities. All other identity proposals
+  are source-backed alias/display candidates, never fuzzy automatic merges.
+  The outcome section retains both source records for all 14 cases: 12
+  no-contest-versus-winner (with overturned-method evidence where present) and
+  2 winner disagreements.
+- Added `build-m3-reviewer-packet` and `import-m3-reviewer-decisions` CLI
+  commands. Import checks exact issued IDs/evidence hashes, reviewer,
+  timezone-aware timestamp, rationale, decision type, duplicates, stale rows,
+  and contradictory replay. It appends an idempotent decision ledger only;
+  raw data, aliases, taxonomy, canonical facts, feature status, and models are
+  untouched. M3 remains **conditionally complete** pending reviewed imports
+  and the canonical/model-ready validation gates.
+
+## M3 corrected deferred-review packet (2026-07-18)
+
+- Retired the two stale Roldan alias IDs and ten stale aggregate taxonomy IDs
+  through an importer-enforced retirement manifest. Generated a replacement
+  packet at `data/quarantine/reviews/m3-corrections-v4/` with new review IDs
+  and evidence hashes; no source, canonical, feature, or model artifact was
+  modified.
+- `M3-ID-524AA01602F1` is the one replacement identity proposal for **Roldan
+  Sangcha-an**, retaining both reviewed source aliases. Seven corrected
+  taxonomy proposals now express the exact requested display/method mappings
+  and an explicit `preserve_null` missing-stance policy.
+- The schedule/finish groups are now 48 bout-level items: 27 documented
+  DataLab overtime formats with an individual preserve action, and 21 Ultimate
+  four-round records with an individual explicit-exclusion recommendation.
+  Thus 0 mappings and 0 exclusions are applied; 56 correction decisions remain
+  unresolved pending reviewer import. The outcome file's 12
+  `confirm_overturned` and 2 `select_ufc_datalab` values remain untouched.
+- Import now supports `approve_corrected_mapping`, `preserve_null`,
+  `exclude_affected_record`, and `defer`, while still refusing retired IDs and
+  retaining immutable-ledger-only behavior. M3 stays **conditionally
+  complete**.
+
+## M3 anomaly-packet audit (2026-07-18)
+
+- The alleged 4,827 UFC-DataLab overtime rows do not reproduce. The immutable
+  8,737-row source is one aggregate bout row per record (8,736 unordered bout
+  keys; one repeated key), not a per-round or fighter-side-stat table. The
+  only detector condition is numeric `finish_round > parsed_scheduled_rounds`,
+  where the maximum is parsed from raw `time_format` and includes OT rounds.
+  Result: **0 flagged rows / 0 flagged bouts**; 152 valid explicit
+  overtime-format rows / 151 unique bouts.
+- Regenerated the reviewer-only correction packet at
+  `data/quarantine/reviews/m3-corrections-v6/`. Its raw-field, parser,
+  top-20-combination, dedupe, and 30-case audit is in
+  `m3_anomaly_detector_audit.md`. All 21 Ultimate raw-four-round records are
+  itemized in `m3_ultimate_four_round_audit.md`: 19 have exact DataLab
+  four-round-OT evidence; two are unresolved cross-source identity/bout
+  matches and only offer reviewed exclusion or defer.
+- The earlier 56 decisions were exactly 1 identity + 6 exact taxonomy + 1
+  null policy + 27 DataLab row items + 21 Ultimate row items. The new packet
+  has **20** decisions: 1 identity, 6 exact taxonomy, 1 null policy, 9 grouped
+  DataLab special-format decisions, 1 grouped Ultimate confirmation, and 2
+  unresolved bout actions. Forty-six old bout review records were detector
+  false positives; 2 are exclusion candidates; no exclusions, decisions,
+  canonical data, features, or models were changed.
+- Focused tests cover normal three- and five-round bouts, all legal finish
+  rounds, impossible rounds, OT preservation, and deduplication. M3 remains
+  **conditionally complete** pending human review/import and downstream
+  acceptance gates.
+
+## M3 v6 imported-decision validation (2026-07-18)
+
+- v6 ledger validation passes: 34 unique active decisions, all complete and
+  evidence-hash-valid; deterministic replay returns 0 applied / 34 replayed.
+  Composition is 1 identity, 6 exact taxonomy, 1 null policy, 9 special
+  formats, 1 four-round confirmation, 2 reviewed exclusions, and 14 outcomes
+  (12 overturned no-contests, 2 UFC-DataLab winner selections).
+- M3 cannot yet materialize canonical bouts or model-ready tables without
+  weakening gates. The closed 34-record v6 ledger lacks source-wide exact
+  alias and observed-label taxonomy authority for all retained rows; older
+  queues contain extra unledgered approvals and cannot be implicitly applied.
+  No raw, canonical, feature, model, or partial-ledger artifact was changed.
+  M3 remains **conditionally complete** pending authorized source-wide mapping
+  authority.
+
+## M3 authority migration/materialization continuation (2026-07-18)
+
+- Migrated 49 approved legacy identity and 53 approved legacy taxonomy rows
+  into the immutable v6 supplemental authority ledger; 12 deferred rows were
+  retired/superseded and 0 rows rejected. Derived v6 outputs contain 2,790
+  fighters and 9,069 canonical bouts, with two reviewed Ultimate exclusions.
+  Historical and model-ready projections are 9,069 rows. Validation and
+  additional acceptance hardening remain required before M3 can be marked
+  complete.
+
+## M3 acceptance (2026-07-18)
+
+M3 data/materialization work is **complete**, while repository-level final
+verification remains pending a Docker Compose runtime retry. The previous blocker was an implementation assumption,
+not an unresolved source fact: the mapper demanded a reviewed row for every
+unchanged source alias and canonical taxonomy value. `materialize-m3` now
+migrates only evidence-valid, current legacy approvals into a separate
+immutable supplemental ledger, applies reviewed exceptions, and defaults only
+semantics-preserving self identities and already-canonical field values.
+It produces 9,039 canonical bouts, 2,770 canonical fighters, 9,039
+strictly-prior historical rows, and 9,039 leakage-safe model-ready rows. The
+two reviewed Ultimate records remain traceable exclusions and unresolved count
+is zero.
+
+## M3 final acceptance evidence (2026-07-19)
+
+This supersedes the 2026-07-18 M3 counts above. The immutable current
+generation is `m3-74eeb9b7f49b5adca45e461a`; its generation-scoped
+`m3_final_acceptance_report.json` is canonical JSON derived from the manifest,
+Parquet artifacts, source checksums, authority ledgers, and provenance. It
+reports 2,790 fighters, 9,068 canonical historical bouts, 9,068 pairwise
+rows, and 8,912 binary model rows (4,610 positive and 4,302 negative), with
+65 draws and 91 no-contests excluded. All 150,162 published output rows have
+provenance coverage, and the acceptance audit records zero unresolved,
+non-finite, null-target, missingness, and provenance-orphan counts.
+
+The checked projection has 138 columns: seven trace metadata columns, 130
+prediction-safe prefight features, and one binary target. The acceptance
+contract verifies deterministic JSON, artifact hashes/schemas/cardinalities,
+raw and ledger checksums, authority resolution, model eligibility, and the
+existing atomic-publication failure-injection evidence. See
+`docs/M3_ACCEPTANCE_REPORT.md` for the concise handoff report.
+
+Final verification passed: all 71 M3 data tests, byte-identical acceptance
+report replay (SHA-256
+`5844d6b59ea693c8620a3443d82f4d704254023eba32e8967d1d280c9cc02c5c`),
+formatting, Ruff, mypy, architecture/docs and repository-policy checks,
+`git diff --check`, and `docker compose config --quiet`.

@@ -359,3 +359,191 @@ the target date; every row is marked `candidate_unreviewed` and therefore is
 not a training or model-ready feature view. UFC-DataLab adds 37 identity and
 24 taxonomy review items. All are pending; no ambiguous identity or taxonomy
 decision was applied.
+
+## M3 reconciliation semantic profile (2026-07-18)
+
+The prior `4,664 conflicts` figure is retained as the original, deliberately
+coarse legacy comparison count. It did not distinguish a result side from the
+fighter who won when the sources used opposite corner orientation, nor did it
+separate source coverage and post-fight detail from outcome risk. The v4
+reconciliation run preserves both source observations and emits no merged or
+canonical bout.
+
+The local artifacts are under
+`data/quarantine/reconciliation/ultimate_ufc_datalab/m3-reconciliation-v5/`:
+`reconciliation_summary.json` (all field and combination counts),
+`deterministic_or_soft_conflicts.jsonl`, and
+`residual_material_conflicts.jsonl`. Every JSONL record retains both raw
+source rows, normalized comparison values, rule IDs, and match evidence.
+
+Among 6,843 candidate pairs, semantic disagreement counts by field are:
+fighter identity 0; corner orientation 0; outcome 14; event date 0; event
+name 6,843 (Ultimate does not expose an event name); weight class 326;
+scheduled rounds 44; finish method 4,691; finish round 408; finish time 408;
+and location 0. The summary artifact also records every field combination;
+the largest are event name + finish method (4,174), event name only (1,915),
+and event name + finish method + finish round + finish time (274). Raw-format
+variation counts are retained separately, so case/Unicode/punctuation variants
+are observable without being presented as semantic conflicts.
+
+The dispositions are: 0 equivalent after complete deterministic normalization;
+2,028 soft metadata disagreements (including 1,915 missing-value-only pairs);
+0 strictly post-fight-only disagreements; and 4,801 post-fight-detail
+disagreements combined with expected event-name absence. There are 334
+Ultimate-only and 1,894 UFC-DataLab-only candidates, each classified
+`missing_on_one_source`; there are 0 material identity conflicts, 14 material
+outcome conflicts, and 0 ambiguous bout matches. The final reviewer queue is
+therefore 14 records, not 4,664.
+
+Only unquestionably meaning-preserving comparison rules are applied:
+Unicode/whitespace/case/punctuation folding for candidate aliases and text;
+ISO date and `m:ss` time normalization; source outcome corner labels mapped to
+the winning candidate only for comparison; integer formatting; the audited
+presentation suffix `Bout` for the same weight label; and finish-method,
+event, and location formatting. No reviewed identity link, taxonomy decision,
+fuzzy alias, division interpretation, source precedence, or source-value
+overwrite was applied. Post-fight method/round/time differences remain
+non-blocking for the candidate pre-fight proposal unless identity or outcome
+is uncertain. The proposal remains candidate-only and not model-ready.
+
+## M3 final human-review preparation (2026-07-18)
+
+The source-scoped queues were consolidated without applying any decision into
+`data/quarantine/reviews/m3/`: `m3_reviewer_packet.md`,
+`m3_identity_decisions.csv`, `m3_taxonomy_decisions.csv`, and
+`m3_outcome_conflict_decisions.csv`. The packet has 51 deduplicated identity
+decisions, 63 deduplicated taxonomy decisions, and 14 residual outcome
+decisions. Repeated source values are grouped under one stable M3 review ID;
+each item retains all source spellings, affected source-row/bout counts,
+representative queue or reconciliation evidence, confidence, a conservative
+recommended action, and blank reviewer decision/notes fields.
+
+Bruno Silva is a dedicated homonym-preservation decision: Flyweight and
+Middleweight identities must remain separate. Identity suggestions are
+source-backed alias/display candidates only; they explicitly prohibit automatic
+or fuzzy merges without corroborating bout, weight-class, physical-profile, or
+other source evidence. The 14 outcome rows retain both source record keys,
+participants, result and method values: 12 are no-contest-versus-winner cases
+(their evidence identifies `Overturned` when present), and 2 are
+winner-versus-winner disagreements. No draw or source-parsing case was
+observed in this residual set.
+
+`ufc-predictor build-m3-reviewer-packet` deterministically rebuilds the
+packet. `ufc-predictor import-m3-reviewer-decisions <completed-csv...>`
+accepts only packet-issued IDs and exact evidence hashes; it rejects missing
+reviewer/timestamp/rationale, duplicates, stale rows, and contradictions. It
+append-records an idempotent reviewer ledger with reviewer, timestamp,
+rationale, decision, and source evidence. It does not modify immutable raw
+data or itself apply an alias, taxonomy mapping, result, or canonical record.
+M3 remains conditionally complete until reviewed decisions are imported and
+all later canonical/model-ready gates pass.
+
+## M3 corrected deferred-review packet (2026-07-18)
+
+The original deferred IDs are retired and cannot be accepted by the importer:
+`M3-ID-45CDDFCF91DA`, `M3-ID-333577CCC1AF`, and the ten listed deferred
+taxonomy IDs in `m3_retired_review_ids.json`. Replacement-only artifacts are
+in `data/quarantine/reviews/m3-corrections-v4/`; each replacement has a new
+review ID and new evidence hash. The outcome template was not reinterpreted:
+its 12 `confirm_overturned` and 2 `select_ufc_datalab` decisions remain the
+reviewer's original outcome instructions.
+
+The consolidated Roldan replacement is `M3-ID-524AA01602F1`. It proposes one
+canonical display identity, **Roldan Sangcha-an**, while preserving both
+source aliases `Roldan Sangcha-an` and `Roldan Sangcha'an`. Seven taxonomy
+replacement decisions cover the corrected division text, five exact finish
+method mappings, and the explicit null-stance policy. The stance policy keeps
+missing as null, prohibits inference, and permits model-ready use only through
+null handling or an indicator.
+
+The three aggregate schedule/finish anomalies are replaced by 48 bout-level
+items: 27 explicit UFC-DataLab overtime-format records may be preserved only
+by an individual approved corrected mapping; 21 Ultimate four-round records
+lack attached authoritative correction and each recommends
+`exclude_affected_record`. No exclusions or mappings have been applied yet.
+The importer accepts `approve_corrected_mapping`, `preserve_null`,
+`exclude_affected_record`, and `defer` in addition to the existing explicit
+outcome actions. M3 remains conditionally complete until these 56 replacement
+decisions are reviewed and imported.
+
+## M3 corrected anomaly-packet audit (2026-07-18)
+
+The claimed 4,827 UFC-DataLab overtime-format records cannot be reproduced
+from the immutable 8,737-row source and must not enter a human row-review
+queue. `stats_raw.csv` has one aggregate bout record per CSV row (not
+per-round statistics or repeated fighter-side records): 8,736 unordered
+date/fighter bout keys, with one repeated key. The detector uses only raw
+`time_format`, raw `round`, and event date/fighter names for stable dedupe.
+`time_format` is the scheduled-format string: overtime extends the parsed
+maximum, and `No Time Limit` remains null. A violation is only numeric
+`finish_round > parsed_scheduled_rounds`.
+
+The reproducible source profile is **0** flagged rows / **0** flagged bouts,
+not 4,827. There are 152 explicit overtime-format rows representing 151
+unique bouts; all are within their parsed schedules. The top-20 raw-format
+combinations, 30 representative normal/special cases, parsing/null rules, and
+dedupe proof are in
+`data/quarantine/reviews/m3-corrections-v6/m3_anomaly_detector_audit.md`.
+The 21 Ultimate raw-four-round rows are fully enumerated in
+`m3_ultimate_four_round_audit.md`: 19 are exact cross-source
+`3 Rnd + OT (5-5-5-5)` confirmations and legitimate special formats; two
+remain unresolved identity/bout matches. Neither is auto-excluded.
+
+The old 56-item replacement packet is exactly 1 replacement identity, 6 exact
+taxonomy mappings, 1 missing-stance-null policy, 27 individual DataLab format
+items, and 21 individual Ultimate four-round items (1 + 6 + 1 + 27 + 21 =
+56). The evidence-bound v6 packet replaces that detector output with 20
+decisions: 1 identity, 6 exact taxonomy, 1 null policy, 9 grouped DataLab
+special formats, 1 grouped Ultimate confirmation, and 2 unresolved bout
+actions. Thus 46 of the old 48 bout review records are deterministic false
+positives (27 DataLab + 19 Ultimate); the remaining two are exclusion
+candidates, with zero exclusions applied. The 152/151 valid special-format
+rows/bouts are preserved as explicit formats, not silently normalized.
+
+`build-m3-correction-packet` now writes the deterministic v6 packet, evidence
+hashes, retirement manifest, and both audit artifacts. Focused tests prove
+that standard three-round decisions and finishes, five-round finishes,
+overtime formats, duplicate source rows, and impossible round values are
+handled correctly. No raw source, reviewer decision, canonical record,
+feature, or model was modified. M3 remains **conditionally complete**.
+
+## M3 v6 imported-decision validation (2026-07-18)
+
+Validated the immutable v6 ledger at
+`data/quarantine/reviews/m3-corrections-v6/m3_imported_decisions.jsonl`.
+It contains exactly 34 unique active IDs, with zero blank or deferred rows,
+and replays idempotently as 0 new / 34 replayed. The ledger checksum is
+`e4092ca73c5d15dc8695db33c291f6a472b5fe0e36b0d705a19fc64fa37215bb`.
+Its decision composition is 1 identity, 6 exact taxonomy mappings, 1 null
+stance policy, 9 special-format groups, 1 Ultimate four-round confirmation,
+2 reviewed exclusions, and 14 outcome resolutions (12 overturned no-contests,
+2 UFC-DataLab winner selections). Reviewer, timezone-aware timestamp,
+rationale, v6-issued ID, and recomputed evidence hash checks pass.
+
+Canonical/model-ready materialization is deliberately still blocked. The v6
+ledger is a closed set of 34 correction/outcome decisions; it does not contain
+the source-wide exact fighter-alias and observed-label taxonomy authority that
+the existing canonical mapper requires for every Ultimate/UFC-DataLab row.
+The older queue files contain additional unledgered approval records and may
+not be silently treated as v6 authority. Inventing aliases, outcome labels,
+or taxonomy mappings would weaken the no-unresolved-data gate. No raw source,
+canonical output, feature table, model, or partial ledger was modified; M3
+remains **conditionally complete** pending an authorized complete source-wide
+decision ledger or an explicit reviewed mapping package.
+
+## M3 final authority materialization (2026-07-18)
+
+The closed v6 ledger is retained unchanged. A separate immutable supplemental
+ledger migrates only the 49 identity and 53 taxonomy approvals from the
+completed legacy packet after packet evidence-hash, reviewer, timezone-aware
+timestamp, retirement, and supersession checks. Twelve deferred or retired
+rows are rejected. This resolves the old coverage defect without claiming that
+every unchanged source spelling requires a human mapping: exact source values
+map to themselves when unambiguous, while transformations remain source- and
+field-scoped reviewed authority. No fuzzy identity merge is used.
+
+`materialize-m3` reads only the two audited local raw CSVs and writes derived
+Parquet snapshots under `data/processed/m3-authority-v1/`. Its model-ready
+view contains only project-owned strictly-prior history values; it excludes
+source differences, odds, rankings, result fields, finish fields, and current
+fight statistics. Same-day bouts are calculated from a pre-date snapshot.
