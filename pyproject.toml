@@ -19,7 +19,7 @@ ufc-predictor-ml = { workspace = true }
 dev = [
   "mypy==1.16.1",
   "pytest==8.4.1",
-  "pytest-cov==6.2.1",
+  "pytest-cov==7.1.0",
   "pytest-xdist==3.7.0",
   "ruff==0.12.0",
 ]
