@@ -80,3 +80,4 @@ Thumbs.db
 
 # Local test snapshots, logs, and downloaded build inputs.
 .tmp/
+.uv-cache/

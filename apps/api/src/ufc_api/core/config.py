@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     oidc_audience: str | None = None
     oidc_jwks_url: str | None = None
     model_artifact_trusted_prefixes: str = ""
+    champion_bundle_path: str = (
+        "data/processed/m4-final-champion/m3-74eeb9b7f49b5adca45e461a/m4_final_champion_bundle.json"
+    )
     audit_ip_hash_key: SecretStr | None = None
 
     @field_validator("cors_allowed_origins")

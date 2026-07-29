@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,8 @@ from ufc_api.core.config import Settings, get_settings
 from ufc_api.core.errors import DomainError, domain_error_handler, unexpected_error_response
 from ufc_api.core.logging import configure_logging
 from ufc_api.core.middleware import RequestContextMiddleware
+from ufc_api.predictions.champion import router as champion_prediction_router
+from ufc_predictor.inference.m5_champion import ChampionRuntime
 
 
 class HealthResponse(BaseModel):
@@ -39,7 +42,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(resolved_settings.log_level, resolved_settings.log_format)
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        application.state.champion_runtime = ChampionRuntime(
+            bundle_path=Path(resolved_settings.champion_bundle_path)
+        )
         yield
 
     app = FastAPI(
@@ -52,6 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings
+    app.include_router(champion_prediction_router)
     app.add_exception_handler(DomainError, domain_error_handler)
     app.add_exception_handler(Exception, unexpected_error_response)
     app.add_middleware(
@@ -80,7 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             capabilities={
                 "database": "not_checked_until_milestone_7",
                 "redis": "not_checked_until_milestone_7",
-                "model_runtime": "not_available_until_milestone_8",
+                "model_runtime": "ready_m5_champion_bundle",
             },
         )
 

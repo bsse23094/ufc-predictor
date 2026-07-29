@@ -364,3 +364,42 @@ report replay (SHA-256
 `5844d6b59ea693c8620a3443d82f4d704254023eba32e8967d1d280c9cc02c5c`),
 formatting, Ruff, mypy, architecture/docs and repository-policy checks,
 `git diff --check`, and `docker compose config --quiet`.
+
+## M4 Phase 3C opponent-adjusted performance (2026-07-22)
+
+Phase 3C is complete under
+`data/processed/m4-phase3c-opponent-adjusted-performance/m3-74eeb9b7f49b5adca45e461a`.
+It hash-locks the accepted M3 fighter-performance and strictly pre-fight
+performance-history artifacts, Phase 3B1 overall-Elo snapshots/pairwise
+control, and Phase 3A folds. For every date it emits snapshots before adding
+that date's performance observations, so opponent baselines and adjusted
+histories use only `fight_date < target_fight_date`.
+
+The development leader is
+`overall_elo_plus_recent_adjusted__phase3a_shallow_xgboost`: mean log loss
+0.667716 compared with 0.671213 for the frozen overall-Elo control, an
+improvement of 0.003497 on two of three folds. Its inspected benchmark is
+reporting-only. Production replay was byte-identical across all ten emitted
+files; the manifest records every input and output checksum.
+
+## M4 Phase 3D bounded Optuna tuning (2026-07-22)
+
+Phase 3D ran exactly 40 deterministic, development-only Optuna 4.5.0 trials
+against the frozen Phase 3C recent-adjusted champion pack. The selected trial
+is 37 (mean log loss 0.667028, Brier 0.237196, ROC-AUC 0.631155), but its
+0.000688 log-loss improvement does not meet the required 0.001000 promotion
+threshold. Phase 3C therefore remains the accepted champion. The 3D output
+under `data/processed/m4-phase3d-optuna/m3-74eeb9b7f49b5adca45e461a` was
+replayed byte-identically, including the selected model.
+
+## M5 Phase 1 champion inference service (2026-07-28)
+
+The FastAPI service loads only the immutable M4 champion bundle and verifies
+its bundle, model, feature-order, corner-swap, and accepted pre-fight source
+contracts at startup. `POST /api/v1/predictions/fight` accepts canonical
+fighter IDs and a target date, returns only symmetrized probabilities and
+provenance, and rejects any pair/date without an already accepted strict-date
+pre-fight materialization. Native XGBoost missing-value routing is retained;
+unknown values are never filled with zero. The M5 runtime contract and service
+manifest are persisted under `data/processed/m5-phase1-inference` without
+copying mutable training state.

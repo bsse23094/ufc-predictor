@@ -11,10 +11,10 @@ The project is a Python/TypeScript monorepo with a governed local-data pipeline,
 | Repository foundation | Locked Python and Node workspaces, Docker Compose, migrations, CI-oriented checks, API and web health shells | Not yet a complete user-facing product |
 | Data ingestion | Local-file-only adapters for approved sources, immutable raw evidence, checksums, schema validation, quarantine, and durable run metadata | No web scraping or automatic source downloads |
 | Canonical data (M3) | Reviewed identity authority, cross-source reconciliation, atomic generation publication, provenance coverage, pre-fight history/performance/pairwise features, and model-ready binary rows | Real-source taxonomy and identity decisions are explicit review artifacts, never name-only automatic merges |
-| Baseline training (M4) | Deterministic chronological baselines, symmetry-aware training, rolling-temporal XGBoost candidates, manifests, metrics, predictions, and serialized artifacts | Training outputs are local, ignored artifacts; no model-serving endpoint is published |
-| API and web | FastAPI configuration/health foundation, PostgreSQL schema and migrations, Next.js accessible shell, shared type and UI packages | Catalog and prediction experiences are future milestones |
+| Model development (M4) | Deterministic chronological baselines, symmetry-aware XGBoost candidates, opponent-strength and opponent-adjusted features, bounded Optuna evaluation, calibration/blending and confidence-coverage studies, plus an immutable champion bundle | Training outputs are local, ignored artifacts; only the accepted champion is eligible for inference |
+| API and web | FastAPI configuration/health endpoints and a read-only M5 champion prediction route; PostgreSQL schema/migrations, Next.js accessible shell, and shared packages | Catalog and full web prediction experiences are future milestones |
 
-The current M3 acceptance record is documented in [docs/M3_ACCEPTANCE_REPORT.md](docs/M3_ACCEPTANCE_REPORT.md). Its accepted generation contains 9,068 reconciled historical bouts and an 8,912-row model-ready binary projection; the underlying artifacts are deliberately not committed.
+The current M3 acceptance record is documented in [docs/M3_ACCEPTANCE_REPORT.md](docs/M3_ACCEPTANCE_REPORT.md). Its accepted generation contains 9,068 reconciled historical bouts and an 8,912-row model-ready binary projection; the underlying artifacts and M4/M5 model artifacts are deliberately not committed.
 
 ## Design principles
 
@@ -69,7 +69,21 @@ Start the web application from a second terminal:
 just dev-web
 ```
 
-The API health endpoint is `http://127.0.0.1:8000/health`. The readiness response intentionally reports only dependencies that are actually implemented; it does not claim a model is being served.
+The API health endpoint is `http://127.0.0.1:8000/health`. To start the prediction API, the accepted local M3/M4 artifacts and immutable champion bundle must already exist at `CHAMPION_BUNDLE_PATH` (see `.env.example`); startup validates their checksums and contracts before accepting requests.
+
+## Champion prediction API
+
+`POST /api/v1/predictions/fight` returns a symmetrized pre-fight probability for two canonical fighter IDs and a target date. It accepts only prediction-safe, strictly pre-fight feature materializations: unknown fighters or unavailable source history receive a `422` response rather than a fabricated estimate.
+
+```json
+{
+  "fighter_a_id": "canonical-fighter-a-id",
+  "fighter_b_id": "canonical-fighter-b-id",
+  "target_fight_date": "2026-08-01"
+}
+```
+
+Responses include complementary win probabilities, the predicted winner when the probability is not exactly even, confidence coverage, model and feature-schema versions, bundle provenance, history counts, and any insufficient-history indicators. The runtime preserves native XGBoost missing-value behavior; missing values are never replaced with zero.
 
 ## Quality checks
 
@@ -110,9 +124,16 @@ uv run ufc-predictor materialize-m3-v6
 uv run ufc-predictor train-m4-baselines
 uv run ufc-predictor train-m4-symmetry
 uv run ufc-predictor train-m4-xgboost
+uv run ufc-predictor train-m4-opponent-strength
+uv run ufc-predictor train-m4-opponent-ablation
+uv run ufc-predictor train-m4-opponent-adjusted-performance
+uv run ufc-predictor train-m4-optuna
+uv run ufc-predictor train-m4-calibration-blending
+uv run ufc-predictor evaluate-m4-confidence-coverage
+uv run ufc-predictor finalize-m4-champion
 ```
 
-Each stage writes a generation-scoped manifest, feature contract, metrics, predictions, and lineage information beneath `data/processed/`. M4 phase 1 establishes chronological logistic-regression and histogram-gradient-boosting baselines; phase 2 enforces orientation symmetry; phase 3A evaluates a regularized XGBoost candidate over rolling temporal folds. These are research and evaluation artifacts, not a production prediction service.
+Each stage writes a generation-scoped manifest, feature contract, metrics, predictions, and lineage information beneath `data/processed/`. M4 phase 1 establishes chronological logistic-regression and histogram-gradient-boosting baselines; phase 2 enforces orientation symmetry; later phases evaluate opponent-aware features, bounded tuning, calibration/blending, and confidence coverage. `finalize-m4-champion` creates the checksum-verified immutable bundle consumed by the M5 runtime. These remain local research/evaluation artifacts, not a betting product.
 
 ## Data governance
 

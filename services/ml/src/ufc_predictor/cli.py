@@ -399,3 +399,206 @@ def train_m4_xgboost(
         output_root=output_root,
     )
     typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("train-m4-opponent-strength")
+def train_m4_opponent_strength(
+    m3_root: Annotated[Path, typer.Option()] = Path("data/processed/m3-v6"),
+    phase1_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-baselines"),
+    phase2_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase2-symmetry"),
+    phase3a_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3a-xgboost"),
+    output_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b1-opponent-strength"
+    ),
+) -> None:
+    """Train M4 Phase 3B1 opponent-strength feature ablations."""
+
+    from ufc_predictor.training.m4_opponent_strength import run_m4_opponent_strength_training
+
+    result = run_m4_opponent_strength_training(
+        m3_root=m3_root,
+        phase1_root=phase1_root,
+        phase2_root=phase2_root,
+        phase3a_root=phase3a_root,
+        output_root=output_root,
+    )
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("train-m4-opponent-ablation")
+def train_m4_opponent_ablation(
+    m3_root: Annotated[Path, typer.Option()] = Path("data/processed/m3-v6"),
+    phase1_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-baselines"),
+    phase2_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase2-symmetry"),
+    phase3a_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3a-xgboost"),
+    phase3b1_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b1-opponent-strength"
+    ),
+    output_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b2-opponent-ablation"
+    ),
+) -> None:
+    """Train M4 Phase 3B2 opponent-strength group ablations."""
+
+    from ufc_predictor.training.m4_opponent_ablation import run_m4_opponent_ablation_training
+
+    result = run_m4_opponent_ablation_training(
+        m3_root=m3_root,
+        phase1_root=phase1_root,
+        phase2_root=phase2_root,
+        phase3a_root=phase3a_root,
+        phase3b1_root=phase3b1_root,
+        output_root=output_root,
+    )
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("train-m4-opponent-adjusted-performance")
+def train_m4_opponent_adjusted_performance(
+    m3_root: Annotated[Path, typer.Option()] = Path("data/processed/m3-v6"),
+    phase1_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-baselines"),
+    phase2_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase2-symmetry"),
+    phase3a_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3a-xgboost"),
+    phase3b1_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b1-opponent-strength"
+    ),
+    output_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3c-opponent-adjusted-performance"
+    ),
+) -> None:
+    """Train M4 Phase 3C opponent-adjusted performance packs."""
+
+    from ufc_predictor.training.m4_opponent_adjusted_performance import (
+        run_m4_opponent_adjusted_performance_training,
+    )
+
+    result = run_m4_opponent_adjusted_performance_training(
+        m3_root=m3_root,
+        phase1_root=phase1_root,
+        phase2_root=phase2_root,
+        phase3a_root=phase3a_root,
+        phase3b1_root=phase3b1_root,
+        output_root=output_root,
+    )
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("train-m4-optuna")
+def train_m4_optuna(
+    m3_root: Annotated[Path, typer.Option()] = Path("data/processed/m3-v6"),
+    phase1_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-baselines"),
+    phase2_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase2-symmetry"),
+    phase3a_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3a-xgboost"),
+    phase3b1_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b1-opponent-strength"
+    ),
+    phase3c_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3c-opponent-adjusted-performance"
+    ),
+    output_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3d-optuna"),
+) -> None:
+    """Tune the frozen M4 Phase 3C champion pack with bounded Optuna trials."""
+
+    from ufc_predictor.training.m4_optuna_tuning import run_m4_optuna_tuning
+
+    result = run_m4_optuna_tuning(
+        m3_root=m3_root,
+        phase1_root=phase1_root,
+        phase2_root=phase2_root,
+        phase3a_root=phase3a_root,
+        phase3b1_root=phase3b1_root,
+        phase3c_root=phase3c_root,
+        output_root=output_root,
+    )
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("train-m4-calibration-blending")
+def train_m4_calibration_blending(
+    m3_root: Annotated[Path, typer.Option()] = Path("data/processed/m3-v6"),
+    phase1_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-baselines"),
+    phase2_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase2-symmetry"),
+    phase3a_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3a-xgboost"),
+    phase3b1_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b1-opponent-strength"
+    ),
+    phase3c_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3c-opponent-adjusted-performance"
+    ),
+    phase3d_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3d-optuna"),
+    output_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase4a-calibration-blending"
+    ),
+) -> None:
+    """Evaluate development-only calibration and fixed logistic/XGBoost blends."""
+
+    from ufc_predictor.training.m4_calibration_blending import run_m4_calibration_blending
+
+    result = run_m4_calibration_blending(
+        m3_root=m3_root,
+        phase1_root=phase1_root,
+        phase2_root=phase2_root,
+        phase3a_root=phase3a_root,
+        phase3b1_root=phase3b1_root,
+        phase3c_root=phase3c_root,
+        phase3d_root=phase3d_root,
+        output_root=output_root,
+    )
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("evaluate-m4-confidence-coverage")
+def evaluate_m4_confidence_coverage(
+    m3_root: Annotated[Path, typer.Option()] = Path("data/processed/m3-v6"),
+    phase1_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-baselines"),
+    phase2_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase2-symmetry"),
+    phase3a_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3a-xgboost"),
+    phase3b1_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3b1-opponent-strength"
+    ),
+    phase3c_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase3c-opponent-adjusted-performance"
+    ),
+    phase3d_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-phase3d-optuna"),
+    phase4a_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase4a-calibration-blending"
+    ),
+    output_root: Annotated[Path, typer.Option()] = Path(
+        "data/processed/m4-phase4b-confidence-coverage"
+    ),
+) -> None:
+    """Evaluate fixed confidence coverage for the accepted Phase 3C champion."""
+
+    from ufc_predictor.training.m4_confidence_coverage import run_m4_confidence_coverage
+
+    result = run_m4_confidence_coverage(
+        m3_root=m3_root,
+        phase1_root=phase1_root,
+        phase2_root=phase2_root,
+        phase3a_root=phase3a_root,
+        phase3b1_root=phase3b1_root,
+        phase3c_root=phase3c_root,
+        phase3d_root=phase3d_root,
+        phase4a_root=phase4a_root,
+        output_root=output_root,
+    )
+    typer.echo(json.dumps(result, sort_keys=True))
+
+
+@app.command("finalize-m4-champion")
+def finalize_m4_champion(
+    output_root: Annotated[Path, typer.Option()] = Path("data/processed/m4-final-champion"),
+) -> None:
+    """Publish the immutable M4 champion deployment bundle."""
+
+    from ufc_predictor.training.m4_final_champion import run_m4_final_champion_bundle
+
+    typer.echo(json.dumps(run_m4_final_champion_bundle(output_root=output_root), sort_keys=True))
+
+
+@app.command("verify-m5-phase2-exhaustive-parity")
+def verify_m5_phase2_exhaustive_parity() -> None:
+    """Verify every accepted Phase 3C row against the M5 historical-exact route."""
+    from ufc_predictor.inference.m5_champion import run_m5_phase2_exhaustive_parity
+
+    typer.echo(json.dumps(run_m5_phase2_exhaustive_parity(), sort_keys=True))
