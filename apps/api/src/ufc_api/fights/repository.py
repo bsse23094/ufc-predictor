@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
+from typing import TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from ufc_api.fights.schemas import FightDetail, FightPage
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -457,3 +461,199 @@ def _issue_key(source_id: UUID, issue: CanonicalCatalogIssue) -> str:
         (str(source_id), issue.rule_id, issue.source_record_key, issue.raw_sha256)
     ).encode("utf-8")
     return sha256(payload).hexdigest()
+
+
+class FightCatalogRepository:
+    """Read-only catalog queries for canonical fights, participants, and results."""
+
+    def __init__(self, session: AsyncSession | None = None) -> None:
+        self._session = session
+
+    async def get_fight(self, fight_id: UUID) -> FightDetail | None:
+        """Fetch full details for one canonical fight."""
+        if self._session is None:
+            from ufc_api.data.parquet_catalog import ParquetCatalog
+
+            return ParquetCatalog.get_fight(fight_id)
+
+        from sqlalchemy import func
+
+        from ufc_api.fights.schemas import FightDetail, ParticipantSummary, ResultSummary
+
+        stmt = (
+            select(Fight, Division.canonical_code)
+            .outerjoin(Division, Division.division_id == Fight.division_id)
+            .where(Fight.fight_id == fight_id)
+        )
+        row = (await self._session.execute(stmt)).first()
+        if row is None:
+            return None
+
+        fight, div_code = row
+
+        part_stmt = (
+            select(FightParticipant, Fighter.display_name)
+            .join(Fighter, Fighter.fighter_id == FightParticipant.fighter_id)
+            .where(FightParticipant.fight_id == fight_id)
+            .order_by(FightParticipant.canonical_slot.asc())
+        )
+        part_rows = (await self._session.execute(part_stmt)).all()
+        participants = [
+            ParticipantSummary(
+                participant_id=str(p.fight_participant_id),
+                fighter_id=str(p.fighter_id),
+                display_name=name,
+                canonical_slot=p.canonical_slot,
+                source_corner=p.source_corner,
+            )
+            for p, name in part_rows
+        ]
+
+        res_stmt = select(FightResult).where(FightResult.fight_id == fight_id)
+        res = await self._session.scalar(res_stmt)
+        res_summary = None
+        if res is not None:
+            winner_fighter_id = None
+            if res.winner_participant_id is not None:
+                for p, _ in part_rows:
+                    if p.fight_participant_id == res.winner_participant_id:
+                        winner_fighter_id = str(p.fighter_id)
+                        break
+            res_summary = ResultSummary(
+                result_id=str(res.fight_result_id),
+                outcome_type=res.outcome_type,
+                canonical_method_code=res.canonical_method_code,
+                source_outcome_label=res.source_outcome_label,
+                source_method_label=res.source_method_label,
+                winner_participant_id=(
+                    str(res.winner_participant_id) if res.winner_participant_id else None
+                ),
+                winner_fighter_id=winner_fighter_id,
+            )
+
+        src_stmt = (
+            select(func.count())
+            .select_from(FightSourceReference)
+            .where(FightSourceReference.fight_id == fight_id)
+        )
+        src_count = (await self._session.scalar(src_stmt)) or 0
+
+        return FightDetail(
+            fight_id=str(fight.fight_id),
+            fight_date=fight.fight_date,
+            division_code=div_code,
+            status=fight.status,
+            publication_state=fight.publication_state,
+            event_context_status=fight.event_context_status,
+            scheduled_rounds=fight.scheduled_rounds,
+            round_length_seconds=fight.round_length_seconds,
+            location=fight.location,
+            country=fight.country,
+            participants=participants,
+            result=res_summary,
+            source_count=src_count,
+            created_at=fight.created_at,
+            updated_at=fight.updated_at,
+        )
+
+    async def list_fights(
+        self,
+        *,
+        division: str | None = None,
+        status: str | None = None,
+        limit: int = 25,
+        cursor: str | None = None,
+    ) -> FightPage:
+        """Return paginated canonical fights, optionally filtered by division/status."""
+        if self._session is None:
+            from ufc_api.data.parquet_catalog import ParquetCatalog
+
+            return ParquetCatalog.list_fights(
+                division=division, status=status, limit=limit, cursor=cursor
+            )
+
+        from ufc_api.fights.schemas import (
+            FightPage,
+            FightSummary,
+            ParticipantSummary,
+            ResultSummary,
+        )
+
+        stmt = (
+            select(Fight, Division.canonical_code)
+            .outerjoin(Division, Division.division_id == Fight.division_id)
+            .order_by(Fight.fight_date.desc().nulls_last(), Fight.fight_id.asc())
+        )
+        if division:
+            stmt = stmt.where(Division.canonical_code == division)
+        if status:
+            stmt = stmt.where(Fight.status == status)
+
+        if cursor:
+            # Simple offset cursor
+            stmt = stmt.offset(int(cursor))
+
+        stmt = stmt.limit(limit + 1)
+        rows = (await self._session.execute(stmt)).all()
+        has_more = len(rows) > limit
+        fight_rows = rows[:limit]
+
+        items: list[FightSummary] = []
+        for fight, div_code in fight_rows:
+            part_stmt = (
+                select(FightParticipant, Fighter.display_name)
+                .join(Fighter, Fighter.fighter_id == FightParticipant.fighter_id)
+                .where(FightParticipant.fight_id == fight.fight_id)
+                .order_by(FightParticipant.canonical_slot.asc())
+            )
+            part_rows = (await self._session.execute(part_stmt)).all()
+            participants = [
+                ParticipantSummary(
+                    participant_id=str(p.fight_participant_id),
+                    fighter_id=str(p.fighter_id),
+                    display_name=name,
+                    canonical_slot=p.canonical_slot,
+                    source_corner=p.source_corner,
+                )
+                for p, name in part_rows
+            ]
+
+            res_stmt = select(FightResult).where(FightResult.fight_id == fight.fight_id)
+            res = await self._session.scalar(res_stmt)
+            result = None
+            if res is not None:
+                winner_fighter_id = None
+                if res.winner_participant_id is not None:
+                    for p, _ in part_rows:
+                        if p.fight_participant_id == res.winner_participant_id:
+                            winner_fighter_id = str(p.fighter_id)
+                            break
+                result = ResultSummary(
+                    result_id=str(res.fight_result_id),
+                    outcome_type=res.outcome_type,
+                    canonical_method_code=res.canonical_method_code,
+                    source_outcome_label=res.source_outcome_label,
+                    source_method_label=res.source_method_label,
+                    winner_participant_id=(
+                        str(res.winner_participant_id) if res.winner_participant_id else None
+                    ),
+                    winner_fighter_id=winner_fighter_id,
+                )
+
+            items.append(
+                FightSummary(
+                    fight_id=str(fight.fight_id),
+                    fight_date=fight.fight_date,
+                    division_code=div_code,
+                    status=fight.status,
+                    scheduled_rounds=fight.scheduled_rounds,
+                    participants=participants,
+                    result=result,
+                )
+            )
+
+        return FightPage(
+            items=items,
+            next_cursor=str(int(cursor or "0") + limit) if has_more else None,
+            has_more=has_more,
+        )

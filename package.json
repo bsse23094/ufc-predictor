@@ -13,6 +13,8 @@
     }
   },
   "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:api": "uv run --project apps/api python -m uvicorn ufc_api.main:create_app --factory --reload --host 127.0.0.1 --port 8000",
     "build": "corepack pnpm --filter @ufc-predictor/web build",
     "dev:web": "corepack pnpm --filter @ufc-predictor/web dev",
     "lint": "corepack pnpm --filter @ufc-predictor/web lint",

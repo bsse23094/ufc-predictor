@@ -39,6 +39,17 @@ class Settings(BaseSettings):
     max_request_bytes: int = Field(default=1_048_576, ge=1_024, le=10_485_760)
     max_page_size: int = Field(default=100, ge=1, le=100)
 
+    # Cache
+    cache_default_ttl_seconds: int = Field(default=300, ge=0, le=86400)
+    cache_catalog_ttl_seconds: int = Field(default=300, ge=0, le=86400)
+    cache_prediction_ttl_seconds: int = Field(default=60, ge=0, le=86400)
+
+    # Auth / rate limiting
+    api_key_header: str = "X-API-Key"
+    admin_api_keys: str = ""  # comma-separated admin keys
+    analyst_api_keys: str = ""  # comma-separated analyst keys
+    rate_limit_per_minute: int = Field(default=60, ge=1, le=10000)
+
     oidc_issuer_url: str | None = None
     oidc_audience: str | None = None
     oidc_jwks_url: str | None = None
@@ -46,6 +57,7 @@ class Settings(BaseSettings):
     champion_bundle_path: str = (
         "data/processed/m4-final-champion/m3-74eeb9b7f49b5adca45e461a/m4_final_champion_bundle.json"
     )
+    sportsdataio_mma_api_key: SecretStr | None = None
     audit_ip_hash_key: SecretStr | None = None
 
     @field_validator("cors_allowed_origins")

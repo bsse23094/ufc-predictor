@@ -85,11 +85,18 @@ class ChampionRuntime:
     """Validated model plus a read-only accepted pre-fight feature resolver."""
 
     def __init__(self, bundle_path: Path = DEFAULT_BUNDLE_PATH) -> None:
-        self.bundle_path = bundle_path
-        self.bundle_hash = _sha256(bundle_path) if bundle_path.is_file() else ""
+        bundle_path = Path(bundle_path)
+        if not bundle_path.is_file():
+            for parent in Path(__file__).resolve().parents:
+                candidate = parent / bundle_path
+                if candidate.is_file():
+                    bundle_path = candidate
+                    break
+        self.bundle_path = bundle_path.resolve()
+        self.bundle_hash = _sha256(self.bundle_path) if self.bundle_path.is_file() else ""
         if self.bundle_hash != EXPECTED_BUNDLE_SHA256:
             raise ChampionRuntimeError("champion bundle hash validation failed")
-        self.bundle = _read_json(bundle_path)
+        self.bundle = _read_json(self.bundle_path)
         self._validate_contract()
         self.model = self._load_model()
         self._rows, self._fighters = self._load_prediction_safe_rows()

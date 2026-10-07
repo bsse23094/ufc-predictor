@@ -2,7 +2,12 @@
 
 UFC Predictor is a reproducible, audit-first UFC analytics platform for producing pre-fight probability estimates. It is intentionally **not** a betting product: it does not make wagering recommendations, promise outcomes, or hide missing data behind overconfident predictions.
 
-The project is a Python/TypeScript monorepo with a governed local-data pipeline, canonical fight-history materialization, deterministic baseline-training workflows, a FastAPI foundation, and a Next.js web foundation. Every published data or training artifact is designed to retain provenance, versioning, and validation evidence.
+The project is a Python/TypeScript monorepo with a governed local-data pipeline, canonical fight-history materialization, a pure winner model, FastAPI, and a Next.js interface. The supported local prediction requires the accepted data generation and champion bundle.
+
+**Current scope:** Pure winner probabilities work for known canonical fighters
+with accepted, strictly pre-fight history. Method, round, duration, and market predictions; durable
+prediction snapshots; and a verified future event feed remain incomplete. See the
+[2026-10-08 implementation audit](docs/IMPLEMENTATION_AUDIT_2026-10-08.md).
 
 ## What is implemented
 
@@ -12,7 +17,7 @@ The project is a Python/TypeScript monorepo with a governed local-data pipeline,
 | Data ingestion | Local-file-only adapters for approved sources, immutable raw evidence, checksums, schema validation, quarantine, and durable run metadata | No web scraping or automatic source downloads |
 | Canonical data (M3) | Reviewed identity authority, cross-source reconciliation, atomic generation publication, provenance coverage, pre-fight history/performance/pairwise features, and model-ready binary rows | Real-source taxonomy and identity decisions are explicit review artifacts, never name-only automatic merges |
 | Model development (M4) | Deterministic chronological baselines, symmetry-aware XGBoost candidates, opponent-strength and opponent-adjusted features, bounded Optuna evaluation, calibration/blending and confidence-coverage studies, plus an immutable champion bundle | Training outputs are local, ignored artifacts; only the accepted champion is eligible for inference |
-| API and web | FastAPI configuration/health endpoints and a read-only M5 champion prediction route; PostgreSQL schema/migrations, Next.js accessible shell, and shared packages | Catalog and full web prediction experiences are future milestones |
+| API and web | FastAPI catalog and pure winner endpoints, Parquet fallback, Next.js exploration pages, shared packages | Secondary outcomes and durable product workflows remain open; unavailable results are surfaced rather than synthesized |
 
 The current M3 acceptance record is documented in [docs/M3_ACCEPTANCE_REPORT.md](docs/M3_ACCEPTANCE_REPORT.md). Its accepted generation contains 9,068 reconciled historical bouts and an 8,912-row model-ready binary projection; the underlying artifacts and M4/M5 model artifacts are deliberately not committed.
 

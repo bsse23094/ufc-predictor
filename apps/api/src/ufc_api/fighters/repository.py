@@ -6,8 +6,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from ufc_api.fighters.schemas import FighterDetail, FighterPage
+    from ufc_api.fights.schemas import FighterHistoryPage
+
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -1008,3 +1013,283 @@ def _alias_records_prior_decision(alias: FighterAlias, decision_id: UUID) -> boo
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+class FighterCatalogRepository:
+    """Read-only catalog queries for canonical fighters and history."""
+
+    def __init__(self, session: AsyncSession | None = None) -> None:
+        self._session = session
+
+    async def list_fighters(
+        self,
+        *,
+        query: str | None = None,
+        limit: int = 25,
+        cursor: str | None = None,
+    ) -> FighterPage:
+        """Return a keyset-paginated slice of canonical fighters."""
+        if self._session is None:
+            from ufc_api.data.parquet_catalog import ParquetCatalog
+
+            return ParquetCatalog.list_fighters(query=query, limit=limit, cursor=cursor)
+
+        from sqlalchemy import and_, func, or_
+
+        from ufc_api.db.pagination import decode_cursor, encode_cursor
+        from ufc_api.fighters.schemas import FighterPage, FighterSummary
+
+        stmt = (
+            select(
+                Fighter,
+                func.count(FighterAlias.fighter_alias_id).label("alias_count"),
+            )
+            .outerjoin(
+                FighterAlias,
+                and_(
+                    FighterAlias.fighter_id == Fighter.fighter_id,
+                    FighterAlias.system_to.is_(None),
+                ),
+            )
+            .group_by(Fighter.fighter_id)
+        )
+
+        if query:
+            clean_query = query.strip()
+            stmt = stmt.where(Fighter.display_name.ilike(f"%{clean_query}%"))
+
+        if cursor:
+            cursor_dict = decode_cursor(cursor)
+            cursor_name = str(cursor_dict["display_name"])
+            cursor_id = UUID(cursor_dict["fighter_id"])
+            stmt = stmt.where(
+                or_(
+                    Fighter.display_name > cursor_name,
+                    and_(
+                        Fighter.display_name == cursor_name,
+                        Fighter.fighter_id > cursor_id,
+                    ),
+                )
+            )
+
+        stmt = stmt.order_by(Fighter.display_name.asc(), Fighter.fighter_id.asc()).limit(limit + 1)
+        result = await self._session.execute(stmt)
+        rows = result.all()
+
+        has_more = len(rows) > limit
+        page_rows = rows[:limit]
+        next_cursor = None
+        if has_more and page_rows:
+            last_fighter = page_rows[-1][0]
+            next_cursor = encode_cursor(
+                {
+                    "display_name": last_fighter.display_name,
+                    "fighter_id": str(last_fighter.fighter_id),
+                }
+            )
+
+        items = [
+            FighterSummary(
+                fighter_id=str(f.fighter_id),
+                display_name=f.display_name,
+                identity_status=f.identity_status,
+                active_alias_count=count,
+                created_at=f.created_at,
+            )
+            for f, count in page_rows
+        ]
+        return FighterPage(items=items, next_cursor=next_cursor, has_more=has_more)
+
+    async def get_fighter(self, fighter_id: UUID | str) -> FighterDetail | None:
+        """Fetch a single canonical fighter and all reviewed aliases."""
+        if self._session is None:
+            from ufc_api.data.parquet_catalog import ParquetCatalog
+
+            return ParquetCatalog.get_fighter(fighter_id)
+
+        target_uuid = fighter_id if isinstance(fighter_id, UUID) else None
+        if target_uuid is None:
+            try:
+                target_uuid = UUID(str(fighter_id))
+            except (ValueError, AttributeError):
+                return None
+
+        from ufc_api.fighters.schemas import FighterAliasSummary, FighterDetail
+
+        fighter = await self._session.scalar(
+            select(Fighter).where(Fighter.fighter_id == target_uuid)
+        )
+        if fighter is None:
+            return None
+
+        alias_stmt = (
+            select(FighterAlias)
+            .where(FighterAlias.fighter_id == target_uuid)
+            .order_by(FighterAlias.system_to.asc(), FighterAlias.alias_value.asc())
+        )
+        aliases = (await self._session.scalars(alias_stmt)).all()
+
+        return FighterDetail(
+            fighter_id=str(fighter.fighter_id),
+            display_name=fighter.display_name,
+            identity_status=fighter.identity_status,
+            merged_into_fighter_id=(
+                str(fighter.merged_into_fighter_id) if fighter.merged_into_fighter_id else None
+            ),
+            retired_at=fighter.retired_at,
+            created_at=fighter.created_at,
+            updated_at=fighter.updated_at,
+            aliases=[
+                FighterAliasSummary(
+                    alias_id=str(a.fighter_alias_id),
+                    alias_value=a.alias_value,
+                    normalized_value=a.normalized_value,
+                    alias_type=a.alias_type,
+                    source_id=str(a.source_id),
+                    is_current=a.system_to is None,
+                    resolution_status=a.resolution_status,
+                )
+                for a in aliases
+            ],
+        )
+
+    async def get_fighter_history(
+        self,
+        fighter_id: UUID | str,
+        *,
+        limit: int = 25,
+        cursor: str | None = None,
+    ) -> FighterHistoryPage | None:
+        """Fetch paginated bout history for one canonical fighter."""
+        if self._session is None:
+            from ufc_api.data.parquet_catalog import ParquetCatalog
+
+            return ParquetCatalog.get_fighter_history(fighter_id, limit=limit, cursor=cursor)
+        from datetime import date
+
+        from sqlalchemy import and_, or_
+
+        from ufc_api.db.pagination import decode_cursor, encode_cursor
+        from ufc_api.fights.models import Division, Fight, FightParticipant, FightResult
+        from ufc_api.fights.schemas import (
+            FighterHistoryPage,
+            FightSummary,
+            ParticipantSummary,
+            ResultSummary,
+        )
+
+        fighter = await self._session.scalar(
+            select(Fighter).where(Fighter.fighter_id == fighter_id)
+        )
+        if fighter is None:
+            return None
+
+        subquery = select(FightParticipant.fight_id).where(
+            FightParticipant.fighter_id == fighter_id
+        )
+        stmt = (
+            select(Fight, Division.canonical_code)
+            .outerjoin(Division, Division.division_id == Fight.division_id)
+            .where(Fight.fight_id.in_(subquery))
+        )
+
+        if cursor:
+            cursor_dict = decode_cursor(cursor)
+            cursor_date = (
+                date.fromisoformat(cursor_dict["fight_date"])
+                if cursor_dict.get("fight_date")
+                else None
+            )
+            cursor_fight_id = UUID(cursor_dict["fight_id"])
+            if cursor_date is not None:
+                stmt = stmt.where(
+                    or_(
+                        Fight.fight_date < cursor_date,
+                        and_(
+                            Fight.fight_date == cursor_date,
+                            Fight.fight_id < cursor_fight_id,
+                        ),
+                    )
+                )
+            else:
+                stmt = stmt.where(Fight.fight_id < cursor_fight_id)
+
+        stmt = stmt.order_by(Fight.fight_date.desc().nullslast(), Fight.fight_id.desc()).limit(
+            limit + 1
+        )
+        result = await self._session.execute(stmt)
+        rows = result.all()
+
+        has_more = len(rows) > limit
+        page_rows = rows[:limit]
+
+        next_cursor = None
+        if has_more and page_rows:
+            last_fight = page_rows[-1][0]
+            next_cursor = encode_cursor(
+                {
+                    "fight_date": str(last_fight.fight_date) if last_fight.fight_date else "",
+                    "fight_id": str(last_fight.fight_id),
+                }
+            )
+
+        items: list[FightSummary] = []
+        for fight, div_code in page_rows:
+            part_stmt = (
+                select(FightParticipant, Fighter.display_name)
+                .join(Fighter, Fighter.fighter_id == FightParticipant.fighter_id)
+                .where(FightParticipant.fight_id == fight.fight_id)
+                .order_by(FightParticipant.canonical_slot.asc())
+            )
+            part_rows = (await self._session.execute(part_stmt)).all()
+            participants = [
+                ParticipantSummary(
+                    participant_id=str(p.fight_participant_id),
+                    fighter_id=str(p.fighter_id),
+                    display_name=name,
+                    canonical_slot=p.canonical_slot,
+                    source_corner=p.source_corner,
+                )
+                for p, name in part_rows
+            ]
+
+            res_stmt = select(FightResult).where(FightResult.fight_id == fight.fight_id)
+            res = await self._session.scalar(res_stmt)
+            res_summary = None
+            if res is not None:
+                winner_fighter_id = None
+                if res.winner_participant_id is not None:
+                    for p, _ in part_rows:
+                        if p.fight_participant_id == res.winner_participant_id:
+                            winner_fighter_id = str(p.fighter_id)
+                            break
+                res_summary = ResultSummary(
+                    result_id=str(res.fight_result_id),
+                    outcome_type=res.outcome_type,
+                    canonical_method_code=res.canonical_method_code,
+                    source_outcome_label=res.source_outcome_label,
+                    source_method_label=res.source_method_label,
+                    winner_participant_id=(
+                        str(res.winner_participant_id) if res.winner_participant_id else None
+                    ),
+                    winner_fighter_id=winner_fighter_id,
+                )
+
+            items.append(
+                FightSummary(
+                    fight_id=str(fight.fight_id),
+                    fight_date=fight.fight_date,
+                    division_code=div_code,
+                    status=fight.status,
+                    scheduled_rounds=fight.scheduled_rounds,
+                    participants=participants,
+                    result=res_summary,
+                )
+            )
+
+        return FighterHistoryPage(
+            fighter_id=str(fighter_id),
+            items=items,
+            next_cursor=next_cursor,
+            has_more=has_more,
+        )

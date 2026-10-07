@@ -1,5 +1,11 @@
 # Implementation roadmap
 
+> Status note (2026-10-08): Milestone descriptions below are acceptance targets.
+> The older M3 "in progress" paragraph and the M7–M14 "complete" claims in
+> `../CURRENT_PROGRESS.md` are stale or overbroad. Consult
+> [the implementation audit](../IMPLEMENTATION_AUDIT_2026-10-08.md) for verified
+> current behavior and open release gates.
+
 ## Delivery rules
 
 Milestones are ordered gates, not parallel feature wishes. A milestone closes only when its acceptance criteria and tests pass and required evidence is stored. Later exploratory spikes may begin early, but they cannot bypass dependency gates. Complexity is relative:

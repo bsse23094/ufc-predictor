@@ -63,6 +63,14 @@ def test_invalid_or_unavailable_history_fails_closed(runtime: ChampionRuntime) -
         runtime.predict("not-a-canonical-fighter", fighter_a, fight_date)
 
 
+def test_known_fighters_can_use_strict_date_runtime_features(runtime: ChampionRuntime) -> None:
+    fighter_a, fighter_b, _ = _known_request(runtime)
+    prediction = runtime.predict(fighter_a, fighter_b, date(2025, 1, 1))
+
+    assert prediction.feature_source == "runtime_as_of_date"
+    assert prediction.probability_a + prediction.probability_b == pytest.approx(1.0)
+
+
 def test_corrupted_bundle_is_rejected_before_model_loading(tmp_path: Path) -> None:
     corrupted = tmp_path / "bundle.json"
     corrupted.write_bytes(DEFAULT_BUNDLE_PATH.read_bytes() + b"corrupt")

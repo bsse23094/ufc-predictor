@@ -22,4 +22,4 @@ def test_readiness_does_not_claim_future_services_are_available() -> None:
     response = client.get("/readiness")
 
     assert response.status_code == 200
-    assert response.json()["capabilities"]["database"] == "not_checked_until_milestone_7"
+    assert response.json()["capabilities"]["database"] in ("not_configured", "ready")

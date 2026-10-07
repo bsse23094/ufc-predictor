@@ -33,7 +33,7 @@ services:
       start_period: 5s
 
   api:
-    profiles: ["app"]
+    profiles: ["app", "staging"]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -57,7 +57,7 @@ services:
       - /tmp
 
   worker:
-    profiles: ["worker"]
+    profiles: ["worker", "staging"]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -78,7 +78,7 @@ services:
       - /tmp
 
   web:
-    profiles: ["app"]
+    profiles: ["app", "staging"]
     build:
       context: .
       dockerfile: apps/web/Dockerfile

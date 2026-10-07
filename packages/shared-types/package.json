@@ -2,6 +2,11 @@
   "name": "@ufc-predictor/shared-types",
   "version": "0.1.0",
   "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "generate": "openapi-typescript openapi.json -o src/generated.ts",
     "check-generated": "corepack pnpm generate && git diff --exit-code -- openapi.json src/generated.ts"

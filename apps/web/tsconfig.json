@@ -25,6 +25,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@ufc-predictor/shared-types": [
+        "../../packages/shared-types/src/index.ts"
+      ],
+      "@ufc-predictor/ui": [
+        "../../packages/ui/src/index.ts"
       ]
     }
   },

@@ -1,5 +1,12 @@
 # API specification
 
+> This is a target contract, not a description of every current route. As of
+> 2026-10-08, the implemented matchup route supports only the pure winner model,
+> returns null for method/round distributions, defaults `persist` to false, and
+> rejects durable snapshots with 501. The upcoming route returns 404 when no
+> verified future card exists. See the
+> [implementation audit](../IMPLEMENTATION_AUDIT_2026-10-08.md).
+
 ## Conventions
 
 Canonical endpoints are under /api/v1 except root probes /health and /readiness. JSON uses snake_case to match Python and generated clients. Times are timezone-aware ISO 8601 UTC; dates are ISO 8601 dates; IDs are UUIDs unless a schema explicitly says opaque string. Probabilities are numbers in [0,1]. Pagination is keyset-based:

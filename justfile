@@ -19,39 +19,38 @@ seed-test-data:
   uv run python scripts/tasks.py seed-test-data
 
 dev-api:
-  uv run --project apps/api uvicorn ufc_api.main:create_app --factory --reload --host 127.0.0.1 --port 8000
+  uv run --project apps/api python -m uvicorn ufc_api.main:create_app --factory --reload --host 127.0.0.1 --port 8000
 
 dev-worker:
   uv run --project apps/api celery -A ufc_api.worker:celery_app worker --loglevel=INFO
 
 dev-web:
-  pnpm --filter @ufc-predictor/web dev
+  corepack pnpm --filter @ufc-predictor/web dev
 
 dev:
-  @Write-Error "Run 'just infra-up' and start 'just dev-api', 'just dev-web', and optionally 'just dev-worker' in separate terminals."
-  exit 1
+  node scripts/dev.js
 
 lint:
   uv run ruff check apps/api/src services/ml/src tests scripts
-  pnpm lint
+  corepack pnpm lint
 
 format-check:
   uv run ruff format --check apps/api/src services/ml/src tests scripts
 
 typecheck:
   uv run mypy
-  pnpm typecheck
+  corepack pnpm typecheck
 
 test-unit:
   uv run pytest -m "not integration"
-  pnpm test
+  corepack pnpm test
 
 test-integration:
   uv run pytest -m integration
 
 test-contract:
   just openapi
-  pnpm check:generated
+  corepack pnpm check:generated
 
 test-e2e:
   @Write-Error "E2E tests are introduced with the web and catalog milestones; no suite exists in M1."
